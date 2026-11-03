@@ -31,11 +31,24 @@ function addXP(n) {
   const before = rankIdx();
   S.xp += Math.round(n);
   for (let r = before + 1; r <= rankIdx(); r++) {
-    S.funds += 500; S.perkPts = (S.perkPts || 0) + 1;
+    S.funds += 500;
     log(`PROMOTED to ${CAREER[r].name}. Unlocked: ${CAREER[r].unlocks.map(unlockName).join(', ')}. $500K command bonus and 1 perk point.`, 'good');
   }
+  syncRankPerks();
 }
 
+// One perk point per rank reached. Also pays out ranks earned before perks existed, without paying twice.
+function syncRankPerks() {
+  if (!isCampaign()) return 0;
+  if (S.perkRankPaid == null) {
+    const spent = Object.keys(S.perks || {}).reduce((n, k) => n + (PERKS[k] ? PERKS[k].cost : 0), 0);
+    S.perkRankPaid = Math.min(rankIdx(), (S.perkPts || 0) + spent);
+  }
+  const owed = rankIdx() - S.perkRankPaid;
+  if (owed <= 0) return 0;
+  S.perkPts = (S.perkPts || 0) + owed; S.perkRankPaid += owed;
+  return owed;
+}
 function mkObjective(id, n) {
   if (id === 'ops') return { id, n: Math.min(5, 2 + Math.floor(n / 3)) };
   if (id === 'fuel') return { id, n: Math.min(Math.round(capOf('fuel') * 0.45 / 10) * 10, 150 + 25 * Math.min(n, 8)) };

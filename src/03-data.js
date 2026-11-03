@@ -167,7 +167,7 @@ function newFleet() {
   });
 }
 function newGame(mode = 'free') {
-  return { v: 2, mode, xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null, perks: mode === 'free' ? allPerksOff() : {}, perkPts: 0,
+  return { v: 2, mode, xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null, perks: mode === 'free' ? allPerksOff() : {}, perkPts: 0, perkRankPaid: 0,
     t: mode === 'campaign' ? 6 * 60 : 6 * 60 + 40, funds: 2400, rep: 60, speed: 1, started: false, over: false,
     crews: 3, base: { hangar: 0, patriot: 0, shorad: 0, fuelfarm: 0, bunker: 0, quarters: 0 }, build: null, training: null, pilots: [],
     res: { fuel: 360, aim120: 14, aim9: 18, agm65: 8, gbu12: 10, gun: 6000, chaff: 520, flare: 480, parts: 16, pac3: 0, stinger: 0 },

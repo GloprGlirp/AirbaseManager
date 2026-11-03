@@ -217,6 +217,8 @@ function frame(now) {
 function boot(data) {
   const hot = data && data.S;
   S = hot || loadGame() || newGame();
+  const owed = syncRankPerks();
+  if (owed) log(`Perk points for promotions you earned earlier: +${owed}. Spend them on the Base tab.`, 'good');
   if (!hot && S.started && !S.over) { UI.resume = true; S.started = false; }
   initScenery(); sizeScene();
   try { new ResizeObserver(sizeScene).observe(cv); } catch (e) { window.addEventListener('resize', sizeScene); }

@@ -527,7 +527,7 @@ function newFleet() {
   });
 }
 function newGame(mode = 'free') {
-  return { v: 2, mode, xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null, perks: mode === 'free' ? allPerksOff() : {}, perkPts: 0,
+  return { v: 2, mode, xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null, perks: mode === 'free' ? allPerksOff() : {}, perkPts: 0, perkRankPaid: 0,
     t: mode === 'campaign' ? 6 * 60 : 6 * 60 + 40, funds: 2400, rep: 60, speed: 1, started: false, over: false,
     crews: 3, base: { hangar: 0, patriot: 0, shorad: 0, fuelfarm: 0, bunker: 0, quarters: 0 }, build: null, training: null, pilots: [],
     res: { fuel: 360, aim120: 14, aim9: 18, agm65: 8, gbu12: 10, gun: 6000, chaff: 520, flare: 480, parts: 16, pac3: 0, stinger: 0 },
@@ -1280,11 +1280,24 @@ function addXP(n) {
   const before = rankIdx();
   S.xp += Math.round(n);
   for (let r = before + 1; r <= rankIdx(); r++) {
-    S.funds += 500; S.perkPts = (S.perkPts || 0) + 1;
+    S.funds += 500;
     log(`PROMOTED to ${CAREER[r].name}. Unlocked: ${CAREER[r].unlocks.map(unlockName).join(', ')}. $500K command bonus and 1 perk point.`, 'good');
   }
+  syncRankPerks();
 }
 
+// One perk point per rank reached. Also pays out ranks earned before perks existed, without paying twice.
+function syncRankPerks() {
+  if (!isCampaign()) return 0;
+  if (S.perkRankPaid == null) {
+    const spent = Object.keys(S.perks || {}).reduce((n, k) => n + (PERKS[k] ? PERKS[k].cost : 0), 0);
+    S.perkRankPaid = Math.min(rankIdx(), (S.perkPts || 0) + spent);
+  }
+  const owed = rankIdx() - S.perkRankPaid;
+  if (owed <= 0) return 0;
+  S.perkPts = (S.perkPts || 0) + owed; S.perkRankPaid += owed;
+  return owed;
+}
 function mkObjective(id, n) {
   if (id === 'ops') return { id, n: Math.min(5, 2 + Math.floor(n / 3)) };
   if (id === 'fuel') return { id, n: Math.min(Math.round(capOf('fuel') * 0.45 / 10) * 10, 150 + 25 * Math.min(n, 8)) };
@@ -2534,6 +2547,8 @@ function frame(now) {
 function boot(data) {
   const hot = data && data.S;
   S = hot || loadGame() || newGame();
+  const owed = syncRankPerks();
+  if (owed) log(`Perk points for promotions you earned earlier: +${owed}. Spend them on the Base tab.`, 'good');
   if (!hot && S.started && !S.over) { UI.resume = true; S.started = false; }
   initScenery(); sizeScene();
   try { new ResizeObserver(sizeScene).observe(cv); } catch (e) { window.addEventListener('resize', sizeScene); }
