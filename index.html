@@ -818,8 +818,8 @@ function goRTB(f, why) {
   if (m && m.status === 'active') {
     m.status = 'open'; m.flight = null;
     const r = raidOf(m); if (r) r.engaged = null;
-    S.rep = Math.max(0, S.rep - 2);
-    log(`Op. ${m.op} aborted. Tasking reopened, rating −2.`, 'warn');
+    S.rep = Math.max(0, S.rep - 1);
+    log(`Op. ${m.op} aborted. Tasking reopened, rating −1.`, 'warn');
   }
 }
 function missionWin(m, f) {
@@ -832,7 +832,7 @@ function missionWin(m, f) {
 function missionFail(m, why) {
   const f = FL(m.flight);
   closeMission(m, 'failed');
-  const pen = m.rep + 3;
+  const pen = Math.ceil(m.rep / 2);
   S.rep = Math.max(0, S.rep - pen); S.stats.failed++;
   log(`Op. ${m.op} failed: ${why}. Rating −${pen}.`, 'crit');
   if (f) goRTB(f, 'mission scrubbed');
@@ -1111,7 +1111,7 @@ function step(dt) {
   tickBase(dt);
   for (const m of S.missions) {
     if (m.status === 'open' && m.expires && S.t >= m.expires) {
-      closeMission(m, 'expired'); S.rep = Math.max(0, S.rep - 3); S.stats.expired = (S.stats.expired || 0) + 1; log(`Op. ${m.op} expired unflown. Rating −3.`, 'warn');
+      closeMission(m, 'expired'); S.rep = Math.max(0, S.rep - 1); S.stats.expired = (S.stats.expired || 0) + 1; log(`Op. ${m.op} expired unflown. Rating −1.`, 'warn');
     }
   }
   S.missions = S.missions.filter(m => m.status === 'open' || m.status === 'active' || S.t - m.closedAt < 45);
