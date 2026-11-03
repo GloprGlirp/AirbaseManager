@@ -1,0 +1,2364 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0;font-size:14px}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Kestrel Field Ops</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jersey+10&family=Pixelify+Sans:wght@400;500;600&family=Silkscreen:wght@400;700&display=swap">
+<style>
+/* Layout: first-person ops office. Window onto the flightline on top, the base computer on the desk below. */
+:root{
+  color-scheme: dark;
+  --wall:#1e1915;
+  --frame:#40352c;
+  --desk:#54473a;
+  --desk-edge:#6b5c4a;
+  --bezel:#6b5238;
+  --screen:#d4c4a2;
+  --paper2:#c7b692;
+  --amber:#7a2e1f;
+  --amber-dim:#a3412a;
+  --ink:#2e2620;
+  --muted:#5c4e3e;
+  --cyan:#24506e;
+  --ok:#465432;
+  --warn:#8a5a1e;
+  --crit:#a32a1d;
+  --grid:rgba(46,38,32,.12);
+  --line:rgba(46,38,32,.45);
+  --rule:rgba(46,38,32,.28);
+  --lcd:#1e1915;
+  --lcd-ink:#e6c25a;
+  --lcd-dim:#a08e72;
+  --f-disp:"Jersey 10","Silkscreen",monospace;
+  --f-ui:"Pixelify Sans","Silkscreen",monospace;
+  --f-label:"Silkscreen","Pixelify Sans",monospace;
+}
+html,body{height:100%}
+body{background:var(--wall);color:var(--ink);font-family:var(--f-ui);font-size:13px;overflow:hidden}
+*{box-sizing:border-box}
+.room{height:100%;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(150px,45%) minmax(0,1fr)}
+.windowband{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 0;min-height:0;background:var(--wall)}
+.window{position:relative;height:100%;max-width:1400px;margin:0 auto;border-radius:5px;background:var(--frame);padding:10px;box-shadow:0 0 0 2px #0c0e10,inset 0 1px 0 rgba(255,255,255,.06),0 18px 40px rgba(0,0,0,.5)}
+.glass{position:relative;width:100%;height:100%;overflow:hidden;border-radius:2px;background:#0a0d12}
+#outside{display:block;width:100%;height:100%}
+.glass::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(112deg,rgba(255,255,255,.07) 0%,transparent 24%,transparent 58%,rgba(255,255,255,.035) 68%,transparent 76%)}
+.mullion{position:absolute;top:10px;bottom:10px;left:50%;width:9px;margin-left:-4.5px;background:var(--frame);box-shadow:-1px 0 0 rgba(0,0,0,.5),1px 0 0 rgba(255,255,255,.04)}
+.blinds{position:absolute;left:10px;right:10px;top:10px;height:7%;background:repeating-linear-gradient(to bottom,#3b4046 0 5px,#24282c 5px 7px);box-shadow:0 4px 8px rgba(0,0,0,.45)}
+.plate{position:absolute;left:50%;bottom:-1px;transform:translateX(-50%);display:flex;gap:14px;padding:1px 12px;font-family:var(--f-label);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8d949b;background:var(--frame);border-radius:3px 3px 0 0;white-space:nowrap}
+.desk{position:relative;min-height:0;display:flex;justify-content:center;gap:18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 0;background:linear-gradient(to bottom,#101215 0 8px,var(--desk-edge) 8px 12px,var(--desk) 12px,#25221f 100%)}
+.monitor{flex:1;max-width:1180px;min-width:0;display:flex;flex-direction:column;background:var(--bezel);border-radius:12px 12px 0 0;padding:11px 11px 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 24px 50px rgba(0,0,0,.6)}
+.screen{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;background:var(--screen);border-radius:6px;overflow:hidden;box-shadow:inset 0 0 50px rgba(0,0,0,.75),0 0 0 1px #000}
+.screen::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);z-index:6}
+.chin{height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-family:var(--f-label);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#596067}
+.led{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)}
+.props{width:120px;flex:none;position:relative}
+.mug{position:absolute;left:18px;bottom:26%;width:54px;height:64px;border-radius:4px 4px 12px 12px;background:linear-gradient(90deg,#5b2f2a,#7a3f37 40%,#4a2622);box-shadow:0 10px 18px rgba(0,0,0,.5)}
+.mug::before{content:"";position:absolute;right:-16px;top:14px;width:16px;height:26px;border:5px solid #5f322c;border-left:0;border-radius:0 12px 12px 0}
+.mug::after{content:"";position:absolute;left:4px;right:4px;top:3px;height:7px;border-radius:50%;background:#1d120d}
+.clip{position:absolute;right:6px;bottom:18%;width:96px;height:120px;background:#d9d3c4;border-radius:3px;transform:rotate(7deg);box-shadow:0 10px 20px rgba(0,0,0,.45);padding:22px 9px 0;font-family:var(--f-label);font-size:9px;letter-spacing:.06em;color:#4a4740;line-height:1.5;text-transform:uppercase}
+.clip::before{content:"";position:absolute;left:30px;top:-4px;width:36px;height:14px;background:#8b8f94;border-radius:3px}
+/* screen chrome */
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.brand{font-family:var(--f-disp);font-size:24px;line-height:.9;color:var(--amber);letter-spacing:.03em}
+.brand small{display:block;font-family:var(--f-label);font-size:10px;letter-spacing:.2em;color:var(--muted)}
+.stat{display:flex;flex-direction:column;line-height:1.05;font-variant-numeric:tabular-nums}
+.stat b{font-family:var(--f-disp);font-size:21px;font-weight:400;color:var(--ink)}
+.stat span{font-family:var(--f-label);font-size:10px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase}
+.stat b.ok{color:var(--ok)}.stat b.warn{color:var(--warn)}.stat b.crit{color:var(--crit)}
+.speed{margin-left:auto;display:flex;gap:3px}
+.btn{font:inherit;font-size:11.5px;background:transparent;color:var(--amber);border:1px solid var(--amber-dim);padding:4px 9px;border-radius:2px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.btn:hover:not(:disabled){background:rgba(240,180,76,.12)}
+.btn.on,.btn.on:hover:not(:disabled){background:var(--amber);color:#1a1307;border-color:var(--amber)}
+.btn:disabled{opacity:.33;cursor:not-allowed}
+.btn.go{color:var(--ok);border-color:rgba(136,210,127,.6)}
+.btn.go:hover:not(:disabled){background:rgba(136,210,127,.12)}
+.btn.big{font-size:14px;padding:8px 16px}
+.btn.cy{color:var(--cyan);border-color:rgba(98,203,215,.5)}
+.btn.red{color:var(--crit);border-color:rgba(255,92,80,.5)}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.tabs{display:flex;gap:2px;padding:0 8px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tab{font-family:var(--f-label);font-size:15px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:7px 14px 6px;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tab.on{color:var(--amber);border-bottom-color:var(--amber)}
+.tab i{font-style:normal;font-family:var(--f-ui);font-size:10px;margin-left:5px;padding:0 5px;border-radius:2px;background:var(--crit);color:#1a0b09;letter-spacing:0}
+.tab i.n{background:var(--amber)}
+.panel{flex:1;min-height:0;overflow:auto;padding:12px 14px 16px}
+.ticker{border-top:1px solid var(--line);padding:6px 12px;font-size:12px;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ticker time{color:var(--muted);margin-right:10px}
+.secH{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px;margin:2px 0 10px}
+.secH h2{font-family:var(--f-label);font-size:18px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin:0}
+.secH p{margin:0;color:var(--muted);font-size:11.5px}
+.h{font-family:var(--f-label);font-size:12px;font-weight:600;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin:0}
+.muted{color:var(--muted)}.okc{color:var(--ok)}.warnc{color:var(--warn)}.critc{color:var(--crit)}.cyc{color:var(--cyan)}
+/* supply */
+.res{display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(110px,2fr) 112px 150px;gap:6px 14px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--rule)}
+.res .nm b{display:block;font-weight:500}
+.res .nm small{color:var(--muted);font-size:11px}
+.gauge{height:11px;background:rgba(255,255,255,.04);border:1px solid var(--rule);position:relative;overflow:hidden}
+.gauge i{position:absolute;top:0;bottom:0;left:0;background:var(--amber)}
+.gauge u{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,rgba(98,203,215,.55) 0 3px,transparent 3px 6px)}
+.gauge.low i{background:var(--warn)}.gauge.crit i{background:var(--crit)}
+.qty{font-family:var(--f-disp);font-size:20px;text-align:right;font-variant-numeric:tabular-nums;line-height:1}
+.qty small{font-family:var(--f-ui);font-size:10.5px;color:var(--muted)}
+.res .btn{justify-self:end}
+.cols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:16px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:12px}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+.list{display:flex;flex-direction:column;gap:5px;font-size:12px}
+.list div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed var(--rule);padding-bottom:4px}
+/* flightline */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(262px,1fr));gap:10px}
+.ac{border:1px solid var(--rule);padding:10px;display:flex;flex-direction:column;gap:7px;background:rgba(255,255,255,.015);min-width:0}
+.ac.lost{opacity:.6}
+.ac header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.call{font-family:var(--f-disp);font-size:24px;line-height:.9;color:var(--ink)}
+.sub{font-size:11px;color:var(--muted)}
+.chip{font-family:var(--f-label);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:1px 6px;border:1px solid currentColor;border-radius:2px;white-space:nowrap}
+.chip.ok{color:var(--ok)}.chip.warn{color:var(--warn)}.chip.crit{color:var(--crit)}.chip.air{color:var(--cyan)}.chip.idle{color:var(--muted)}
+.bars{display:grid;grid-template-columns:62px 1fr 34px;gap:4px 8px;align-items:center;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bars .gauge{height:7px}
+.bars em{font-style:normal;text-align:right;color:var(--ink)}
+.load{font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:3px 10px}
+.load b{color:var(--ink);font-weight:500}
+.task{font-size:11.5px;color:var(--warn);min-height:16px}
+.acts{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.seg{display:inline-flex}
+.seg .btn{border-radius:0;margin-left:-1px}
+.seg .btn:first-child{border-radius:2px 0 0 2px;margin-left:0}
+.seg .btn:last-child{border-radius:0 2px 2px 0}
+/* missions */
+.msplit{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:14px;align-items:start}
+.mlist{display:flex;flex-direction:column;gap:6px}
+.mi{text-align:left;font:inherit;color:inherit;background:transparent;border:1px solid var(--rule);padding:8px 10px;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:2px 10px;border-radius:0}
+.mi:hover{border-color:var(--amber-dim)}
+.mi.sel{border-color:var(--amber);background:rgba(240,180,76,.05)}
+.mi .t{font-family:var(--f-label);font-size:17px;font-weight:600;letter-spacing:.08em;color:var(--amber)}
+.mi .ty{font-size:11px;color:var(--muted);text-align:right}
+.mi small{font-size:11px;color:var(--muted)}
+.mi.int .t{color:var(--crit)}
+.pips{letter-spacing:1px;color:var(--crit);font-size:11px}
+.pips s{text-decoration:none;color:rgba(125,143,137,.4)}
+.plan{border:1px solid var(--line);padding:12px 14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.plan h3{font-family:var(--f-disp);font-size:30px;font-weight:400;color:var(--amber);margin:0;line-height:.9}
+.plan p{margin:0;line-height:1.5;max-width:62ch}
+.pick{display:flex;flex-wrap:wrap;gap:6px}
+.pk{font:inherit;font-size:11.5px;text-align:left;color:var(--ink);background:transparent;border:1px solid var(--rule);padding:5px 8px;cursor:pointer;display:flex;flex-direction:column;gap:1px;min-width:118px;border-radius:2px}
+.pk small{color:var(--muted);font-size:10.5px}
+.pk.on{border-color:var(--cyan);background:rgba(98,203,215,.1)}
+.pk:disabled{opacity:.38;cursor:not-allowed}
+.tact{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
+.tact > div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.tact .seg{flex-wrap:wrap}
+.tact small{color:var(--muted);font-size:11px;min-height:2.6em;line-height:1.3}
+.est{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:12px;color:var(--muted)}
+.est b{color:var(--ink);font-weight:500}
+.empty{color:var(--muted);border:1px dashed var(--rule);padding:16px;line-height:1.5}
+/* tactical */
+.tac{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:12px;height:100%;min-height:340px}
+.scope{position:relative;min-height:300px;border:1px solid var(--grid);background:#071010}
+#tacmap{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+.side{display:flex;flex-direction:column;gap:10px;min-width:0;overflow:auto}
+.fl{font:inherit;color:inherit;text-align:left;background:transparent;border:1px solid var(--rule);padding:6px 9px;cursor:pointer;display:flex;justify-content:space-between;gap:8px;font-size:12px;border-radius:0}
+.fl.on{border-color:var(--cyan);background:rgba(98,203,215,.08)}
+.mem{display:grid;grid-template-columns:1fr auto auto;gap:3px 10px;font-size:11.5px;font-variant-numeric:tabular-nums}
+/* log */
+.log{display:flex;flex-direction:column;gap:4px;font-size:12px;line-height:1.45}
+.log div{display:grid;grid-template-columns:76px 1fr;gap:10px}
+.log time{color:var(--muted);font-variant-numeric:tabular-nums}
+.log .radio{color:var(--cyan)}.log .warn{color:var(--warn)}.log .crit{color:var(--crit)}.log .good{color:var(--ok)}
+/* overlay */
+.overlay{position:absolute;inset:0;background:rgba(4,9,9,.92);display:flex;align-items:flex-start;justify-content:center;padding:16px;z-index:5;overflow:auto}
+.overlay > .brief{margin:auto}
+.brief{max-width:600px;border:1px solid var(--amber-dim);padding:22px 24px;display:flex;flex-direction:column;gap:12px;background:var(--screen)}
+.brief h1{font-family:var(--f-disp);font-size:44px;font-weight:400;color:var(--amber);margin:0;line-height:.85;text-wrap:balance}
+.brief p{margin:0;line-height:1.55;max-width:62ch}
+.brief ul{margin:0;padding-left:18px;line-height:1.6;color:var(--muted)}
+.brief ul b{color:var(--ink);font-weight:500}
+.brief .acts{gap:10px;margin-top:4px}
+.lvl{letter-spacing:2px;color:var(--amber);font-size:12px;white-space:nowrap}.lvl s{text-decoration:none;color:rgba(125,143,137,.35)}
+.prog{height:6px;margin-top:6px;max-width:420px;background:rgba(255,255,255,.05);border:1px solid var(--rule);position:relative}.prog i{position:absolute;top:0;bottom:0;left:0;background:var(--cyan)}
+.stats3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.stats3 b{display:block;color:var(--ink);font-weight:500;text-transform:none;letter-spacing:0;font-size:12px}
+.panel > p{margin:0}
+.objs{display:flex;flex-direction:column;gap:6px}
+.objs div{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px dashed var(--rule);padding-bottom:5px}
+.xp{display:flex;flex-direction:column;gap:2px;max-width:520px}
+.xp .prog{max-width:none}
+.xpl{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;align-items:baseline}
+.xpl b{font-family:var(--f-disp);font-size:26px;font-weight:400;color:var(--amber);line-height:1}
+.xpl span{color:var(--muted);font-size:11.5px}
+.ladder{display:flex;flex-direction:column;gap:4px}
+.rk{display:grid;grid-template-columns:210px minmax(0,1fr);gap:4px 12px;padding:7px 10px;border:1px solid var(--rule);font-size:12px;color:var(--muted);align-items:center}
+.rk b{display:block;font-weight:500}.rk small{font-size:10.5px}
+.rk.got b{color:var(--ok)}.rk.got{color:var(--ink)}.rk.cur{border-color:var(--amber);background:rgba(240,180,76,.05)}
+.modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mode{font:inherit;color:inherit;text-align:left;background:transparent;border:1px solid var(--rule);padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:5px;border-radius:2px}
+.mode:hover{border-color:var(--amber)}
+.mode b{font-family:var(--f-label);font-size:18px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}
+.mode span{color:var(--muted);font-size:12px;line-height:1.45}
+.mode.go b{color:var(--ok)}
+@media (max-width:820px){.rk{grid-template-columns:1fr}.modes{grid-template-columns:1fr}}
+/* ---- Pixel and paper look: hard edges, flat muted colours, stamped documents on a clipboard ---- */
+*{border-radius:0!important}
+body{background:var(--wall) repeating-conic-gradient(#241e19 0 25%,transparent 0 50%) 0 0/4px 4px;font-size:14px}
+.windowband{background:transparent}
+.window{padding:12px;box-shadow:0 0 0 3px #0f0c0a,6px 8px 0 rgba(0,0,0,.45)}
+#outside{image-rendering:crisp-edges;image-rendering:pixelated}
+.glass::after{background:linear-gradient(112deg,transparent 0 18%,rgba(255,255,255,.06) 18% 23%,transparent 23% 62%,rgba(255,255,255,.04) 62% 64%,transparent 64%)}
+.mullion{width:10px;margin-left:-5px;box-shadow:none}
+.blinds{left:12px;right:12px;top:12px;background:repeating-linear-gradient(to bottom,#6b5c4a 0 4px,#40352c 4px 6px);box-shadow:0 4px 0 rgba(0,0,0,.35)}
+.plate{font-family:var(--f-label);font-size:10px;letter-spacing:.06em;color:#bba98a}
+.desk{background:var(--desk) repeating-conic-gradient(#5c4e3f 0 25%,transparent 0 50%) 0 0/4px 4px;border-top:10px solid #2e2620;padding-top:18px}
+.monitor{position:relative;background:var(--bezel);padding:22px 12px 0;box-shadow:inset 0 0 0 3px #4a3a28,6px 0 0 rgba(0,0,0,.3)}
+.monitor::before{content:"";position:absolute;left:50%;top:-8px;width:120px;margin-left:-60px;height:22px;background:#8da3a8;box-shadow:inset 0 -5px 0 #566b76,0 4px 0 rgba(0,0,0,.35);z-index:7}
+.screen{background:var(--screen);box-shadow:4px 4px 0 rgba(0,0,0,.35)}
+.screen::after{background:repeating-conic-gradient(rgba(46,38,32,.035) 0 25%,transparent 0 50%) 0 0/4px 4px}
+.chin{color:#d4c4a2;font-family:var(--f-label);font-size:10px;letter-spacing:.06em}
+.led{background:var(--crit);box-shadow:none}
+.topbar{background:var(--lcd);border-bottom:3px solid var(--ink)}
+.brand{color:var(--lcd-ink);font-size:30px}
+.brand small{color:var(--lcd-dim);font-family:var(--f-label);font-size:9px;letter-spacing:.06em}
+.stat b{color:#ece0c2;font-size:25px}
+.stat span{color:var(--lcd-dim);font-family:var(--f-label);font-size:9px;letter-spacing:.04em}
+.stat b.ok{color:#9cc070}.stat b.warn{color:#e6c25a}.stat b.crit{color:#e8714d}
+.btn{font-family:var(--f-label);font-size:11px;border-width:2px;letter-spacing:.02em;padding:4px 8px}
+.btn:hover:not(:disabled){background:rgba(46,38,32,.1)}
+.btn.on,.btn.on:hover:not(:disabled){background:var(--ink);color:var(--screen);border-color:var(--ink)}
+.btn.big{font-size:14px;padding:8px 14px;border-width:3px}
+.topbar .btn{color:#ece0c2;border-color:#85745d}
+.topbar .btn:hover:not(:disabled){background:rgba(236,224,194,.12)}
+.topbar .btn.on,.topbar .btn.on:hover:not(:disabled){background:var(--lcd-ink);color:var(--lcd);border-color:var(--lcd-ink)}
+.tabs{background:var(--paper2);border-bottom:3px solid var(--ink);gap:4px;padding:6px 8px 0}
+.tab{position:relative;font-family:var(--f-label);font-size:12px;font-weight:400;letter-spacing:.03em;color:var(--muted);background:#bba98a;border:2px solid var(--ink);border-bottom:0;padding:5px 10px 4px}
+.tab.on{background:var(--screen);color:var(--ink);margin-bottom:-3px;padding-bottom:7px;z-index:1}
+.tab i{font-family:var(--f-label);color:#ece0c2}
+.tab i.n{background:var(--ink)}
+.ticker{background:#ece0c2;color:var(--ink);border-top:2px dashed var(--line)}
+.secH h2{font-family:var(--f-disp);font-size:28px;font-weight:400;letter-spacing:.02em;line-height:1}
+.h{font-family:var(--f-label);font-size:10px;font-weight:400;letter-spacing:.05em}
+.ac,.mi,.plan,.empty,.fl,.rk,.mode,.pk{background:var(--paper2);border:2px solid var(--line);box-shadow:3px 3px 0 rgba(46,38,32,.22)}
+.mi.sel,.fl.on,.rk.cur,.mode:hover{border-color:var(--ink);background:#e0d2ae}
+.pk.on{border-color:var(--cyan);background:#b7bda9}
+.call{font-family:var(--f-disp);font-size:27px}
+.mi .t{font-family:var(--f-disp);font-size:23px;font-weight:400;letter-spacing:.02em}
+.plan h3{font-family:var(--f-disp);font-size:38px}
+.chip{font-family:var(--f-label);font-size:10px;font-weight:400;letter-spacing:.03em;border-width:2px;padding:1px 5px;transform:rotate(-2deg);background:rgba(236,224,194,.4)}
+.gauge,.prog{border:2px solid var(--ink);background:rgba(46,38,32,.08)}
+.gauge{height:12px}.bars .gauge{height:10px}.prog{height:10px}
+.gauge i{background:repeating-linear-gradient(90deg,var(--ink) 0 4px,transparent 4px 6px)}
+.gauge.low i{background:repeating-linear-gradient(90deg,var(--warn) 0 4px,transparent 4px 6px)}
+.gauge.crit i{background:repeating-linear-gradient(90deg,var(--crit) 0 4px,transparent 4px 6px)}
+.gauge u{background:repeating-linear-gradient(90deg,rgba(36,80,110,.5) 0 2px,transparent 2px 4px)}
+.prog i{background:repeating-linear-gradient(90deg,var(--cyan) 0 4px,transparent 4px 6px)}
+.qty{font-family:var(--f-disp);font-size:25px}
+.scope{background:#d3c7a2;border:2px solid var(--ink)}
+#tacmap{image-rendering:crisp-edges;image-rendering:pixelated}
+.overlay{background:rgba(15,12,10,.82)}
+.brief{background:var(--screen);border:3px solid var(--ink);box-shadow:8px 8px 0 rgba(0,0,0,.4)}
+.brief h1{font-family:var(--f-disp);font-size:54px}
+.mode b{font-family:var(--f-disp);font-size:28px;font-weight:400;letter-spacing:.02em}
+.xpl b{font-family:var(--f-disp);font-size:32px}
+.mug{background:#7a2e1f;box-shadow:inset -8px 0 0 #4a1f19,inset 6px 0 0 #a3412a,6px 6px 0 rgba(0,0,0,.4)}
+.mug::before{border-color:#7a2e1f}
+.mug::after{background:#2e2620}
+.clip{background:#ece0c2;color:#40352c;font-family:var(--f-label);font-size:8px;line-height:1.8;box-shadow:6px 6px 0 rgba(0,0,0,.4)}
+.clip::before{background:#8da3a8}
+:focus-visible{outline:2px dashed var(--amber)}
+.topbar :focus-visible{outline-color:var(--lcd-ink)}
+@media (max-width:1000px){.props{display:none}}
+@media (max-width:820px){
+  .room{grid-template-rows:minmax(120px,30%) minmax(0,1fr)}
+  .monitor{padding:7px 7px 0;border-radius:8px 8px 0 0}
+  .msplit,.cols2{grid-template-columns:1fr}
+  .tac{grid-template-columns:1fr;height:auto}
+  .scope{height:320px;min-height:0}
+  .res{grid-template-columns:1fr auto}
+  .res .gauge{grid-column:1 / -1;order:3}
+  .res .btn{grid-column:1 / -1;justify-self:start;order:4}
+  .tact{grid-template-columns:1fr}
+  .speed{margin-left:0}
+  .plate{display:none}
+  .chin{height:16px;font-size:9px}
+}
+@media (prefers-reduced-motion:reduce){.screen::after{display:none}}
+</style>
+</head><body>
+<div class="room">
+  <section class="windowband" aria-label="View from the operations office window">
+    <div class="window">
+      <div class="glass"><canvas id="outside" aria-label="Kestrel Field flightline: runway 27, taxiway and parking ramp"></canvas></div>
+      <div class="mullion" aria-hidden="true"></div>
+      <div class="blinds" aria-hidden="true"></div>
+      <div class="plate"><span>RWY 09/27</span><span id="wx">Wind 270/07 kt</span><span id="rwystate">Runway open</span></div>
+    </div>
+  </section>
+  <section class="desk">
+    <div class="props" aria-hidden="true"><div class="mug"></div></div>
+    <div class="monitor">
+      <div class="screen" id="screen">
+        <header class="topbar">
+          <div class="brand">KESTREL FIELD<small>Base operations terminal</small></div>
+          <div class="stat"><b id="clock">D1 06:40</b><span>Local time</span></div>
+          <div class="stat"><b id="funds">$2.40M</b><span>Budget</span></div>
+          <div class="stat"><b id="rep">60</b><span>Command rating</span></div>
+          <div class="stat"><b id="alert" class="ok">GREEN</b><span>Air threat</span></div>
+          <div class="stat" id="shiftstat" hidden><b id="shiftleft">8h 00m</b><span id="shiftname">Day shift 1</span></div>
+          <div class="stat" id="rankstat" hidden><b id="rankname">2nd Lt</b><span id="xpline">0 XP</span></div>
+          <div class="speed" role="group" aria-label="Game speed" id="speed"></div>
+        </header>
+        <nav class="tabs" id="tabs" aria-label="Terminal sections"></nav>
+        <main class="panel" id="panel"></main>
+        <div class="ticker" id="ticker" aria-live="polite"></div>
+        <div class="overlay" id="overlay" hidden></div>
+      </div>
+      <div class="chin"><span>KFO · Ops-3</span><span class="led"></span></div>
+    </div>
+    <div class="props" aria-hidden="true"><div class="clip">Shift orders<br>· Keep 2 jets on alert<br>· Fuel farm min 150 kL<br>· Log all sorties</div></div>
+  </section>
+</div>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const irnd = (a, b) => Math.floor(rnd(a, b + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const hyp = Math.hypot;
+
+const SPEEDS = [0, 0.5, 1, 2, 4];            // game minutes per real second
+const SPEED_LBL = ['Pause', '1×', '2×', '4×', '8×'];
+const CREWS = 3;                             // ground crews working at once
+const DEP = { taxi: 5, roll: 1.8, climb: 2.4 };
+const ARR = { final: 2.6, rollout: 1.8, taxiin: 5 };
+const REPLACE_COST = 1800, REPLACE_ETA = 360;
+
+const RES_DEF = {
+  fuel:   { name: 'JP-8 jet fuel',      short: 'JP-8',    note: 'Bulk storage, fuel farm',     u: 'kL',  cap: 600,   pack: 100,  cost: 90,  eta: 120 },
+  aim120: { name: 'AIM-120C AMRAAM',    short: 'AIM-120', note: 'Radar-guided, long range',    u: '×',   cap: 40,    pack: 4,    cost: 360, eta: 180 },
+  aim9:   { name: 'AIM-9X Sidewinder',  short: 'AIM-9X',  note: 'Infrared, short range',       u: '×',   cap: 40,    pack: 4,    cost: 150, eta: 150 },
+  agm65:  { name: 'AGM-65 Maverick',    short: 'AGM-65',  note: 'Guided air-to-ground missile',u: '×',   cap: 24,    pack: 4,    cost: 200, eta: 180 },
+  gbu12:  { name: 'GBU-12 Paveway II',  short: 'GBU-12',  note: 'Laser-guided 500 lb bomb',    u: '×',   cap: 32,    pack: 4,    cost: 110, eta: 150 },
+  gun:    { name: '20mm PGU-28 rounds', short: '20mm',    note: 'M61A1 cannon ammunition',     u: 'rds', cap: 16000, pack: 2000, cost: 30,  eta: 90 },
+  chaff:  { name: 'RR-170 chaff',       short: 'chaff',   note: 'Defeats radar missiles',      u: 'ctg', cap: 1600,  pack: 240,  cost: 25,  eta: 90 },
+  flare:  { name: 'MJU-7 flares',       short: 'flares',  note: 'Defeats heat seekers',        u: 'ctg', cap: 1600,  pack: 240,  cost: 30,  eta: 90 },
+  parts:  { name: 'Spare parts kits',   short: 'parts',   note: 'Repairs, runway crater fill', u: 'kits',cap: 50,    pack: 6,    cost: 120, eta: 120 },
+  pac3:   { name: 'PAC-3 MSE interceptors', short: 'PAC-3', note: 'Patriot battery missiles',   u: '×',   cap: 8,     pack: 4,    cost: 400, eta: 240 },
+  stinger:{ name: 'FIM-92 Stinger',     short: 'Stinger', note: 'Avenger SHORAD missiles',     u: '×',   cap: 12,    pack: 6,    cost: 90,  eta: 120 },
+};
+// Storage grows with base upgrades; air-defence missiles need their launchers first.
+function capOf(k) {
+  const R = RES_DEF[k], b = S.base;
+  if (k === 'fuel') return R.cap + 250 * b.fuelfarm;
+  if (k === 'pac3') return R.cap * b.patriot;
+  if (k === 'stinger') return R.cap * b.shorad;
+  if (k === 'parts') return R.cap;
+  return Math.round(R.cap * (1 + 0.5 * b.bunker));
+}
+const RES_KEYS = Object.keys(RES_DEF);
+const WKEYS = ['aim120', 'aim9', 'agm65', 'gbu12', 'gun', 'chaff', 'flare'];
+const WLBL = { aim120: 'AIM-120', aim9: 'AIM-9X', agm65: 'AGM-65', gbu12: 'GBU-12', gun: '20mm', chaff: 'Chaff', flare: 'Flare' };
+function fmtQ(k, q) {
+  q = Math.floor(q);
+  const u = RES_DEF[k].u;
+  return u === '×' ? `${q}×` : `${q.toLocaleString('en-US')} ${u}`;
+}
+
+const TYPES = {
+  'F-16C': { fuelKL: 4.5, speed: 15, burn: 1.15, size: 1, price: 2600, call: 'Viper', grp: 1, role: 'Multirole fighter. Cheap and quick to turn around.', loadouts: {
+    A2A:    { aim120: 4, aim9: 2, gun: 510, chaff: 60, flare: 60 },
+    CAP:    { aim120: 2, aim9: 2, gun: 510, chaff: 60, flare: 60 },
+    STRIKE: { aim120: 2, agm65: 2, gbu12: 2, gun: 510, chaff: 60, flare: 60 } } },
+  'F-15E': { fuelKL: 10, speed: 15.5, burn: 1.0, size: 1.22, twin: true, price: 3400, call: 'Razor', grp: 2, role: 'Heavy strike fighter. Long legs and a big bomb load.', loadouts: {
+    A2A:    { aim120: 4, aim9: 4, gun: 500, chaff: 60, flare: 60 },
+    CAP:    { aim120: 2, aim9: 2, gun: 500, chaff: 60, flare: 60 },
+    STRIKE: { aim120: 2, aim9: 2, agm65: 2, gbu12: 4, gun: 500, chaff: 60, flare: 60 } } },
+  'KC-135R': { fuelKL: 90, speed: 13, burn: 0.55, size: 2.1, tanker: true, price: 2800, call: 'Texaco', grp: 3, role: 'Aerial tanker. Gives airborne flights 40 kL of fuel.', loadouts: {} },
+  'F/A-18E': { fuelKL: 6.5, speed: 14.5, burn: 1.05, size: 1.12, price: 3000, call: 'Rhino', grp: 4, role: 'Super Hornet. Rugged all-rounder with good endurance.', loadouts: {
+    A2A:    { aim120: 4, aim9: 2, gun: 412, chaff: 60, flare: 60 },
+    CAP:    { aim120: 2, aim9: 2, gun: 412, chaff: 60, flare: 60 },
+    STRIKE: { aim120: 2, agm65: 2, gbu12: 4, gun: 412, chaff: 60, flare: 60 } } },
+  'A-10C': { fuelKL: 4.9, speed: 9.5, burn: 0.7, size: 1.1, armor: 0.6, gunStrike: true, price: 2200, call: 'Hawg', grp: 5, role: 'Close air support. Slow and armoured, the 30mm gun counts on strikes. No radar missiles.', loadouts: {
+    STRIKE: { aim9: 2, agm65: 4, gbu12: 4, gun: 1150, chaff: 120, flare: 120 },
+    CAP:    { aim9: 2, agm65: 2, gun: 1150, chaff: 120, flare: 120 } } },
+  'F-35A': { fuelKL: 8.3, speed: 15, burn: 0.95, size: 1.05, stealth: true, price: 4600, call: 'Ghost', grp: 6, role: 'Stealth fighter. Enemy fighters and SAMs struggle to hit it. Small internal bays.', loadouts: {
+    A2A:    { aim120: 4, gun: 180, chaff: 40, flare: 40 },
+    CAP:    { aim120: 2, gun: 180, chaff: 40, flare: 40 },
+    STRIKE: { aim120: 2, gbu12: 2, gun: 180, chaff: 40, flare: 40 } } },
+  'E-3G': { fuelKL: 70, speed: 12, burn: 0.5, size: 2.2, awacs: true, price: 4000, call: 'Sentry', grp: 7, role: 'AWACS radar plane. While on station every flight shoots better and spots raids sooner.', loadouts: {} },
+  'C-130H':  { size: 1.8 },
+};
+const SHOP = ['F-16C', 'F-15E', 'F/A-18E', 'A-10C', 'F-35A', 'KC-135R', 'E-3G'];
+const isSupportType = t => !!(TYPES[t].tanker || TYPES[t].awacs);
+const defaultLoadout = t => { const k = Object.keys(TYPES[t].loadouts || {}); return k.includes('A2A') ? 'A2A' : k[0] || null; };
+const replaceCost = a => Math.round((TYPES[a.type].price || 2600) * 0.7 / 10) * 10;
+
+// Base development
+const UPGRADES = {
+  hangar:   { name: 'Aircraft hangar', note: 'Room for 2 more aircraft. Jets inside are safe from raids.', cost: 900, time: 360, max: 4 },
+  patriot:  { name: 'Patriot SAM battery', note: 'Shoots down raiders out to 80 km. Needs PAC-3 interceptors.', cost: 1400, time: 480, max: 2 },
+  shorad:   { name: 'Avenger SHORAD', note: 'Stinger launchers that cover the base itself.', cost: 450, time: 180, max: 3 },
+  fuelfarm: { name: 'Fuel farm expansion', note: '+250 kL jet fuel storage.', cost: 500, time: 240, max: 2 },
+  bunker:   { name: 'Munitions bunker', note: '+50% storage for missiles, bombs, ammo and countermeasures.', cost: 600, time: 300, max: 2 },
+  quarters: { name: 'Crew quarters', note: 'Pilots recover from fatigue twice as fast.', cost: 350, time: 240, max: 1 },
+};
+const CREW_COST = 220, CREW_TIME = 240, CREW_MAX = 8;
+const PILOT_COST = 300, PILOT_TIME = 360, PILOT_MAX = 4;
+const RANKS = ['Capt.', '1st Lt.', 'Maj.', 'Capt.', '1st Lt.'];
+const SURNAMES = ['Brandt', 'Okafor', 'Nakamura', 'Reyes', 'Holm', 'Petrov', 'Adeyemi', 'Calloway', 'Sato', 'Dubois', 'Kowalski', 'Mercer', 'Ibarra', 'Lindgren', 'Vance', 'Achterberg', 'Haddad', 'Novak'];
+const newPilotName = () => `${pick(RANKS)} ${String.fromCharCode(65 + irnd(0, 25))}. ${pick(SURNAMES)}`;
+
+// Parking: 7 ramp spots in view, then 2 slots inside each hangar on the far side of the runway
+const RAMP_BIG = 6;
+const HANGAR_SITES = [0.02, 0.145, 0.27, 0.635], HANGAR_W = 0.11;
+function slotInfo(slot) {
+  if (slot < SPOTS.length) return { x: SPOTS[slot], hangar: false };
+  const i = slot - SPOTS.length, h = Math.floor(i / 2);
+  return { x: HANGAR_SITES[h] + HANGAR_W * (i % 2 ? 0.72 : 0.28), hangar: true, h };
+}
+const slotLabel = s => s < SPOTS.length ? `on spot ${pad2(s + 1)}` : `in hangar H${Math.floor((s - SPOTS.length) / 2) + 1}`;
+function slotCount() { return SPOTS.length + 2 * S.base.hangar; }
+function freeSlot(type) {
+  const big = (TYPES[type].size || 1) >= 2, used = new Set(S.fleet.map(a => a.slot));
+  const order = [];
+  for (let s = 0; s < SPOTS.length; s++) if (s !== RAMP_BIG && !big) order.push(s);
+  if (big) order.push(RAMP_BIG);
+  for (let s = SPOTS.length; s < slotCount(); s++) order.push(s);
+  if (!big) order.push(RAMP_BIG);
+  return order.find(s => !used.has(s)) ?? -1;
+}
+const LO_NAME = { A2A: 'Air superiority', CAP: 'Light CAP', STRIKE: 'Strike' };
+
+const TAC_OPTS = {
+  aggr: { label: 'Aggression', opts: [['DEF', 'Defensive'], ['BAL', 'Balanced'], ['AGG', 'Aggressive']] },
+  form: { label: 'Formation', opts: [['WEDGE', 'Wedge'], ['LINE', 'Line abreast'], ['TRAIL', 'Trail']] },
+  roe:  { label: 'Rules of engagement', opts: [['HOLD', 'Hold'], ['TIGHT', 'Tight'], ['FREE', 'Free']] },
+  alt:  { label: 'Altitude', opts: [['LOW', 'Low'], ['MED', 'Medium'], ['HIGH', 'High']] },
+};
+const TAC_HELP = {
+  aggr: { DEF: 'Fewer shots, harder to hit.', BAL: 'Standard engagement.', AGG: 'More shots and kills, more exposure.' },
+  form: { WEDGE: 'Balanced mutual support.', LINE: 'Wider radar picture, earlier and better first shots.', TRAIL: 'Safest, but slower to kill.' },
+  roe:  { HOLD: 'Fire only in self-defence. Nearly no kills.', TIGHT: 'Fire on identified hostiles.', FREE: 'Fire early and often. Burns missiles.' },
+  alt:  { LOW: 'Accurate bombing, heavy fuel burn, no long-range shots.', MED: 'Standard profile.', HIGH: 'Best fuel and missile range, poorer bombing.' },
+};
+const DEFAULT_TAC = { aggr: 'BAL', form: 'WEDGE', roe: 'TIGHT', alt: 'MED' };
+
+const SPOTS = [0.07, 0.155, 0.24, 0.325, 0.43, 0.545, 0.70];
+const CARGO_SPOT = 0.875;
+const FLEET_DEF = [
+  ['V11', 'Viper 1-1', 'F-16C', '90-0712', 'Maj. D. Kessler'],
+  ['V12', 'Viper 1-2', 'F-16C', '90-0745', 'Capt. A. Moreno'],
+  ['V13', 'Viper 1-3', 'F-16C', '91-0388', '1st Lt. S. Park'],
+  ['V14', 'Viper 1-4', 'F-16C', '91-0402', 'Capt. L. Varga'],
+  ['R21', 'Razor 2-1', 'F-15E', '88-1690', 'Lt. Col. M. Osei'],
+  ['R22', 'Razor 2-2', 'F-15E', '89-0487', 'Capt. J. Lindqvist'],
+  ['T31', 'Texaco 3-1', 'KC-135R', '62-3551', 'Maj. P. Duarte'],
+];
+const OPS = ['GRANITE','HALBERD','COPPER','NIGHTJAR','SALTMARSH','IRONWOOD','BRAMBLE','TINDER','SHALE','HARROW','LANTERN','GALLOWAY','RIMFROST','OXBOW','SPARROWHAWK','CINDER','FELDSPAR','WAYPOST','THISTLE','MERIDIAN','HOLLOWAY','BASALT'];
+const TARGETS = ['a radar site','a fuel depot','a rail bridge','an air-defence command post','a supply convoy','a forward airstrip','an ammunition dump','a SAM battery'];
+const RECON = ['a coastal harbour','a river crossing','a suspected missile site','a mountain pass','an airfield under construction'];
+
+function mkLoad(type, lo) {
+  const L = {};
+  WKEYS.forEach(k => L[k] = 0);
+  if (lo && TYPES[type].loadouts[lo]) Object.assign(L, TYPES[type].loadouts[lo]);
+  return L;
+}
+function newFleet() {
+  return FLEET_DEF.map((r, i) => {
+    const [id, call, type, tail, pilot] = r;
+    const lo = TYPES[type].tanker ? null : (type === 'F-15E' ? 'STRIKE' : 'A2A');
+    const a = { id, call, type, tail, pilot, slot: i, status: 'ready', phase: null, phT: 0,
+      task: null, queue: [], fuel: 100, cond: 100, fatigue: irnd(0, 14), loadout: lo, load: mkLoad(type, lo), flight: null, replacing: null };
+    if (id === 'V13') { a.fuel = 42; a.loadout = null; a.load = mkLoad(type, null); }
+    if (id === 'V14') a.cond = 66;
+    return a;
+  });
+}
+function newGame(mode = 'free') {
+  return { v: 2, mode, xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null,
+    t: mode === 'campaign' ? 6 * 60 : 6 * 60 + 40, funds: 2400, rep: 60, speed: 1, started: false, over: false,
+    crews: 3, base: { hangar: 0, patriot: 0, shorad: 0, fuelfarm: 0, bunker: 0, quarters: 0 }, build: null, training: null, pilots: [],
+    res: { fuel: 360, aim120: 14, aim9: 18, agm65: 8, gbu12: 10, gun: 6000, chaff: 520, flare: 480, parts: 16, pac3: 0, stinger: 0 },
+    fleet: newFleet(), missions: [], flights: [], raids: [], deliveries: [], cargo: [], fx: [],
+    runway: { busy: null, closedUntil: 0 }, log: [], nextId: 1, nextMission: 6 * 60 + 43, budgetDay: 0,
+    wx: { kind: 'clear', wind: 270, kt: 7, until: 6 * 60 + 220 },
+    stats: { won: 0, failed: 0, kills: 0, lost: 0, sorties: 0 } };
+}
+
+let S = null;
+const AC = id => S.fleet.find(a => a.id === id);
+const MS = id => S.missions.find(m => m.id === id);
+const FL = id => S.flights.find(f => f.id === id);
+const pad2 = n => String(n).padStart(2, '0');
+function fmtClock(t) { const m = Math.floor(t % 1440); return `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`; }
+function fmtT(t) { return `D${Math.floor(t / 1440) + 1} ${fmtClock(t)}`; }
+function fmtDur(m) { m = Math.max(0, Math.ceil(m)); return m >= 60 ? `${Math.floor(m / 60)}h ${pad2(m % 60)}m` : `${m} min`; }
+function money(k) { return Math.abs(k) >= 1000 ? `$${(k / 1000).toFixed(2)}M` : `$${Math.round(k)}K`; }
+function hourOf(t) { return (t % 1440) / 60; }
+function log(msg, cls = '') {
+  S.log.push({ t: S.t, msg, cls }); if (S.log.length > 240) S.log.splice(0, S.log.length - 240);
+  if (typeof onLogHook === 'function') onLogHook(cls, msg);
+}
+const radio = m => log(m, 'radio');
+function bearingName(x, y) { const a = (Math.atan2(x, -y) * 180 / Math.PI + 360) % 360; return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(a / 45) % 8]; }
+function sectorName(x, y) { return `${bearingName(x, y)}-${Math.max(1, Math.round(hyp(x, y) / 40))}`; }
+const SAVE_KEY = 'kestrel-field-ops-v1';
+function saveGame() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ } }
+function loadGame() {
+  try { const s = localStorage.getItem(SAVE_KEY); if (s) { const o = JSON.parse(s); if (o && (o.v === 1 || o.v === 2) && o.fleet) return migrate(o); } } catch (e) { /* ignore */ }
+  return null;
+}
+function migrate(o) {
+  if (o.v === 1) {
+    Object.assign(o, { v: 2, crews: 3, base: { hangar: 0, patriot: 0, shorad: 0, fuelfarm: 0, bunker: 0, quarters: 0 }, build: null, training: null, pilots: [] });
+    o.res.pac3 = 0; o.res.stinger = 0;
+    o.fleet.forEach((a, i) => { a.slot = SPOTS.includes(a.spot) ? SPOTS.indexOf(a.spot) : i; delete a.spot; });
+  }
+  if (!o.mode) Object.assign(o, { mode: 'free', xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null });
+  return o;
+}
+function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } }
+// ---------- Ground crews: refuel, arm, repair ----------
+function crewsBusy() { return S.fleet.filter(a => a.task).length; }
+function needsArm(a, lo) {
+  const L = TYPES[a.type].loadouts[lo]; if (!L) return false;
+  return WKEYS.some(k => (L[k] || 0) !== (a.load[k] || 0));
+}
+function queueTask(a, kind, arg) {
+  if (!a || a.status !== 'ready') return;
+  if (a.queue.some(q => q.kind === kind) || (a.task && a.task.kind === kind && kind !== 'arm')) return;
+  a.queue.push({ kind, arg });
+  startTasks();
+}
+function turnaround(a) {
+  if (!a || a.status !== 'ready') return;
+  if (a.cond < 99.5) queueTask(a, 'repair');
+  if (a.fuel < 99.5) queueTask(a, 'refuel');
+  const lo = a.loadout || defaultLoadout(a.type);
+  if (lo && needsArm(a, lo)) queueTask(a, 'arm', lo);
+}
+function startTasks() {
+  for (const a of S.fleet) {
+    if (crewsBusy() >= S.crews) return;
+    if (a.status !== 'ready' || a.task) continue;
+    while (a.queue.length && !a.task) beginTask(a, a.queue.shift());
+  }
+}
+function beginTask(a, q) {
+  const T = TYPES[a.type];
+  if (q.kind === 'refuel') {
+    const need = (100 - a.fuel) / 100 * T.fuelKL; if (need < 0.05) return;
+    const got = Math.min(need, S.res.fuel);
+    if (got < 0.05) { log(`${a.call}: refuel cancelled, the fuel farm is empty.`, 'warn'); return; }
+    S.res.fuel -= got;
+    a.task = { kind: 'refuel', t: 0, dur: T.tanker ? 16 : 6, fuelTo: Math.min(100, a.fuel + got / T.fuelKL * 100) };
+    if (got < need - 0.05) log(`${a.call}: partial refuel, the fuel farm ran dry.`, 'warn');
+  } else if (q.kind === 'arm') {
+    const L = T.loadouts[q.arg]; if (!L) return;
+    const add = {}; let short = false;
+    for (const k of WKEYS) {
+      const want = L[k] || 0, have = a.load[k] || 0;
+      if (have > want) { S.res[k] += have - want; a.load[k] = want; }
+      else if (want > have) {
+        const take = Math.min(want - have, Math.floor(S.res[k]));
+        S.res[k] -= take; add[k] = take; if (take < want - have) short = true;
+      }
+    }
+    a.loadout = q.arg;
+    a.task = { kind: 'arm', t: 0, dur: q.arg === 'STRIKE' ? 12 : 8, add };
+    if (short) log(`${a.call}: loaded short of the ${LO_NAME[q.arg]} configuration, stores are low.`, 'warn');
+  } else if (q.kind === 'repair') {
+    const dmg = 100 - a.cond; if (dmg < 0.5) return;
+    const needP = Math.ceil(dmg / 15), p = Math.min(needP, S.res.parts);
+    if (p <= 0) { log(`${a.call}: repair cancelled, no spare parts kits.`, 'warn'); return; }
+    S.res.parts -= p;
+    const fix = dmg * p / needP;
+    a.task = { kind: 'repair', t: 0, dur: 6 + fix * 0.45, condTo: Math.min(100, a.cond + fix) };
+  }
+}
+function tickTasks(dt) {
+  for (const a of S.fleet) {
+    const k = a.task; if (!k) continue;
+    k.t += dt; if (k.t < k.dur) continue;
+    if (k.kind === 'refuel') a.fuel = k.fuelTo;
+    if (k.kind === 'arm') for (const w in k.add) a.load[w] += k.add[w];
+    if (k.kind === 'repair') a.cond = k.condTo;
+    a.task = null;
+    if (!a.queue.length) log(`${a.call}: crew chief reports ${k.kind === 'arm' ? 'stores loaded' : k.kind === 'refuel' ? 'refuel complete' : 'repairs complete'}.`);
+  }
+  startTasks();
+}
+
+// ---------- Logistics ----------
+function pending(k) {
+  let n = 0;
+  for (const d of S.deliveries) for (const [r, q] of d.items) if (r === k) n += q;
+  for (const c of S.cargo) for (const [r, q] of c.items) if (r === k) n += q;
+  return n;
+}
+function orderBlock(k) {
+  const R = RES_DEF[k], cap = capOf(k);
+  if (!cap) return k === 'pac3' ? 'Build a Patriot battery first' : 'Build an Avenger first';
+  if (S.res[k] + pending(k) + R.pack > cap) return 'Storage full';
+  if (S.funds < R.cost) return 'No budget';
+  return null;
+}
+function order(k) {
+  const R = RES_DEF[k]; if (orderBlock(k)) return;
+  S.funds -= R.cost;
+  const at = S.t + R.eta;
+  const d = S.deliveries.find(d => Math.abs(d.at - at) <= 30);
+  if (d) {
+    const it = d.items.find(i => i[0] === k);
+    if (it) it[1] += R.pack; else d.items.push([k, R.pack]);
+    d.at = Math.max(d.at, at);
+  } else S.deliveries.push({ id: S.nextId++, at, items: [[k, R.pack]] });
+  log(`Ordered ${fmtQ(k, R.pack)} ${R.short} for ${money(R.cost)}. Airlift ETA ${fmtDur(R.eta)}.`);
+}
+function requestReplacement(a) {
+  if (!a || a.status !== 'lost' || a.replacing || S.funds < replaceCost(a)) return;
+  S.funds -= replaceCost(a);
+  a.replacing = S.t + REPLACE_ETA;
+  log(`Replacement ${a.type} requested for ${a.call}. Ferry flight in ${fmtDur(REPLACE_ETA)}.`);
+}
+
+// ---------- Launch ----------
+function readiness(a) {
+  if (!a) return 'Unknown';
+  if (a.status === 'ordered') return 'On order';
+  if (a.status === 'lost') return a.replacing ? 'Replacement en route' : 'Lost';
+  if (a.status !== 'ready') return 'Not on the ramp';
+  if (a.task || a.queue.length) return 'Being serviced';
+  if (a.cond < 50) return 'Grounded, needs repair';
+  if (a.fatigue > 80) return 'Crew rest required';
+  if (a.fuel < 35) return 'Fuel too low';
+  return null;
+}
+function tankerTrack(r = 70) {
+  const act = S.missions.filter(m => m.status === 'open' || m.status === 'active');
+  if (!act.length) return { x: 0, y: -r };
+  let x = 0, y = 0; act.forEach(m => { x += m.x; y += m.y; });
+  const d = hyp(x, y) || 1;
+  return { x: x / d * r, y: y / d * r };
+}
+function launch(mid, ids, tac) {
+  const m = mid ? MS(mid) : null;
+  if (m && m.status !== 'open') return false;
+  ids = ids.filter(id => !readiness(AC(id)));
+  if (!ids.length) return false;
+  const lead = AC(ids[0]);
+  const f = { id: 'F' + (S.nextId++), mission: m ? m.id : null, kind: m ? m.type : (TYPES[lead.type].awacs ? 'AWACS' : 'TANKER'), members: ids.slice(),
+    tac: { ...tac }, state: 'launch', x: 0, y: 0, hdg: -Math.PI / 2, stT: 0, trT: 0, trail: [], enemy: null,
+    refT: 0, tanker: null, offload: 0, call: lead.call.replace(/-\d+$/, '') };
+  ids.forEach((id, i) => { const a = AC(id); a.status = 'dep'; a.phase = 'taxi'; a.phT = -i * 1.4; a.flight = f.id; a.queue = []; });
+  if (m) { m.status = 'active'; m.flight = f.id; }
+  if (!m) { if (f.kind === 'TANKER') f.offload = 40; const t = tankerTrack(f.kind === 'AWACS' ? 55 : 70); f.tx = t.x; f.ty = t.y; }
+  S.flights.push(f);
+  S.stats.sorties += ids.length;
+  radio(`${lead.call}: ${ids.length > 1 ? 'flight of ' + ids.length + ', ' : ''}taxiing${m ? ' for Op. ' + m.op : f.kind === 'AWACS' ? ' for the AWACS orbit' : ' to the tanker track'}.`);
+  return true;
+}
+
+// ---------- Runway and ground movement ----------
+function runwayFree() { return !S.runway.busy && S.t >= S.runway.closedUntil; }
+function arrivalsWaiting() { return S.fleet.some(a => a.phase === 'inbound') || S.cargo.some(c => c.phase === 'inbound'); }
+function advance(o, dt) {
+  o.phT += dt;
+  switch (o.phase) {
+    case 'taxi': if (o.phT >= DEP.taxi) { o.phase = 'hold'; o.phT = 0; } break;
+    case 'hold':
+      if (runwayFree() && !arrivalsWaiting()) {
+        S.runway.busy = o.id; o.phase = 'roll'; o.phT = 0;
+        radio(`Tower: ${o.call}, wind ${S.wx.wind} at ${S.wx.kt}, runway 27, cleared for takeoff.`);
+      } break;
+    case 'roll': if (o.phT >= DEP.roll) { o.phase = 'climb'; o.phT = 0; S.runway.busy = null; } break;
+    case 'climb': if (o.phT >= DEP.climb) { o.phase = null; return 'airborne'; } break;
+    case 'inbound':
+      if (runwayFree()) {
+        S.runway.busy = o.id; o.phase = 'final'; o.phT = 0;
+        radio(`Tower: ${o.call}, runway 27, cleared to land.`);
+      } break;
+    case 'final': if (o.phT >= ARR.final) { o.phase = 'rollout'; o.phT = 0; } break;
+    case 'rollout': if (o.phT >= ARR.rollout) { o.phase = 'taxiin'; o.phT = 0; S.runway.busy = null; } break;
+    case 'taxiin': if (o.phT >= ARR.taxiin) { o.phase = null; return 'parked'; } break;
+    case 'unload': if (o.phT >= 12) { o.phase = 'taxi'; o.phT = 0; return 'unloaded'; } break;
+  }
+  return null;
+}
+function tickGround(dt) {
+  for (const a of S.fleet) {
+    if (a.status === 'dep') {
+      if (advance(a, dt) === 'airborne') { a.status = 'air'; radio(`${a.call} airborne.`); }
+    } else if (a.status === 'arr') {
+      if (advance(a, dt) === 'parked') {
+        a.status = 'ready'; a.flight = null;
+        if (a.cond < 50) log(`${a.call} on the ramp with ${Math.round(100 - a.cond)}% damage. Grounded until repaired.`, 'warn');
+        else log(`${a.call} shut down ${slotLabel(a.slot)}. Fuel ${Math.round(a.fuel)}%.`);
+      }
+    }
+  }
+  for (const c of S.cargo) {
+    const r = advance(c, dt);
+    if (r === 'parked') { c.phase = 'unload'; c.phT = 0; }
+    if (r === 'unloaded') {
+      const txt = c.items.map(([k, q]) => `${fmtQ(k, q)} ${RES_DEF[k].short}`).join(', ');
+      for (const [k, q] of c.items) S.res[k] = Math.min(capOf(k), S.res[k] + q);
+      c.items = [];
+      log(`${c.call} unloaded: ${txt}.`, 'good');
+    }
+    if (r === 'airborne') c.gone = true;
+  }
+  S.cargo = S.cargo.filter(c => !c.gone);
+  for (const d of S.deliveries) {
+    if (S.t < d.at) continue;
+    d.done = true;
+    const c = S.cargo.find(c => ['inbound', 'final', 'rollout', 'taxiin'].includes(c.phase));
+    if (c) c.items.push(...d.items.map(i => i.slice()));
+    else {
+      const call = `Herky ${irnd(21, 78)}`;
+      S.cargo.push({ id: 'C' + (S.nextId++), call, type: 'C-130H', phase: 'inbound', phT: 0, items: d.items.map(i => i.slice()) });
+      radio(`${call}: C-130 inbound with resupply, request landing.`);
+    }
+  }
+  S.deliveries = S.deliveries.filter(d => !d.done);
+}
+// ---------- Flights and combat ----------
+const ALT_BURN = { LOW: 1.35, MED: 1, HIGH: 0.82 };
+const AGGR = { DEF: 0.65, BAL: 1, AGG: 1.4 };
+const ROE = { HOLD: 0.15, TIGHT: 1, FREE: 1.35 };
+const F_ATK = { WEDGE: 1, LINE: 1.12, TRAIL: 0.9 };
+const F_DEF = { WEDGE: 1, LINE: 1.05, TRAIL: 0.8 };
+const A_ATK = { LOW: 0.85, MED: 1, HIGH: 1.15 };
+const WX_NAME = { clear: 'clear skies', cloudy: 'broken cloud', rain: 'rain showers', fog: 'fog', storm: 'thunderstorms' };
+
+function members(f) { return f.members.map(AC).filter(a => a && a.status === 'air'); }
+function flightSpeed(f) { const ms = members(f); return ms.length ? Math.min(...ms.map(a => TYPES[a.type].speed)) : 15; }
+function burnRate(a, f, combat) { return TYPES[a.type].burn * ALT_BURN[f.tac.alt] * (combat ? 1.7 : 1) * (f.tac.aggr === 'AGG' ? 1.08 : 1); }
+function hasA2A(a) { return a.load.aim120 > 0 || a.load.aim9 > 0 || a.load.gun >= 100; }
+function hasA2G(a) { return a.load.gbu12 > 0 || a.load.agm65 > 0 || (!!TYPES[a.type].gunStrike && a.load.gun >= 200); }
+const isSupport = f => f.kind === 'TANKER' || f.kind === 'AWACS';
+function awacsUp() { return S.flights.some(f => f.kind === 'AWACS' && f.state === 'station'); }
+function wxMul() { return S.wx.kind === 'storm' ? 0.85 : S.wx.kind === 'fog' ? 0.9 : 1; }
+function raidOf(m) { return S.raids.find(r => r.mission === m.id); }
+function tankerOnStation() { return S.flights.find(f => f.kind === 'TANKER' && f.state === 'station' && f.offload >= 2); }
+
+function flightTarget(f) {
+  if (f.state === 'rtb') return { x: 0, y: 0 };
+  if (f.state === 'tanking') { const t = FL(f.tanker); return t && t.state === 'station' ? { x: t.x, y: t.y } : null; }
+  if (isSupport(f)) return { x: f.tx, y: f.ty };
+  const m = MS(f.mission); if (!m) return { x: 0, y: 0 };
+  if (m.type === 'INTERCEPT') { const r = raidOf(m); return r ? { x: r.x, y: r.y } : { x: 0, y: 0 }; }
+  return { x: m.x, y: m.y };
+}
+function moveFlight(f, tg, dt) {
+  const dx = tg.x - f.x, dy = tg.y - f.y, d = hyp(dx, dy), step = flightSpeed(f) * dt;
+  if (d > 0.01) { f.hdg = Math.atan2(dy, dx); const k = Math.min(1, step / d); f.x += dx * k; f.y += dy * k; }
+  return d;
+}
+function closeMission(m, status) { m.status = status; m.closedAt = S.t; m.flight = null; }
+function goRTB(f, why) {
+  if (f.state === 'rtb') return;
+  f.state = 'rtb'; f.enemy = null;
+  radio(`${f.call}: ${why}, RTB.`);
+  const m = MS(f.mission);
+  if (m && m.status === 'active') {
+    m.status = 'open'; m.flight = null;
+    const r = raidOf(m); if (r) r.engaged = null;
+    S.rep = Math.max(0, S.rep - 2);
+    log(`Op. ${m.op} aborted. Tasking reopened, rating −2.`, 'warn');
+  }
+}
+function missionWin(m, f) {
+  closeMission(m, 'done');
+  S.funds += m.reward; S.rep = Math.min(100, S.rep + m.rep); S.stats.won++;
+  log(`Op. ${m.op} complete. ${money(m.reward)} added to the budget, rating +${m.rep}${isCampaign() ? `, +${20 + m.threat * 10} XP` : ''}.`, 'good');
+  addXP(20 + m.threat * 10);
+  if (f) goRTB(f, 'mission complete');
+}
+function missionFail(m, why) {
+  const f = FL(m.flight);
+  closeMission(m, 'failed');
+  const pen = m.rep + 3;
+  S.rep = Math.max(0, S.rep - pen); S.stats.failed++;
+  log(`Op. ${m.op} failed: ${why}. Rating −${pen}.`, 'crit');
+  if (f) goRTB(f, 'mission scrubbed');
+}
+function bingo(f) {
+  const d = hyp(f.x, f.y);
+  return members(f).some(a => a.fuel < d / TYPES[a.type].speed * burnRate(a, f, false) + 7);
+}
+function shoot(a, f, skill) {
+  let w, pk;
+  if (a.load.aim120 > 0 && f.tac.alt !== 'LOW') { w = 'aim120'; pk = 0.52; }
+  else if (a.load.aim9 > 0) { w = 'aim9'; pk = 0.6; }
+  else if (a.load.gun >= 100) { w = 'gun'; pk = 0.3; }
+  else return null;
+  a.load[w] -= w === 'gun' ? 100 : 1;
+  pk *= F_ATK[f.tac.form] * A_ATK[f.tac.alt] * (1 - a.fatigue / 260) * (1 - skill * 0.35) * wxMul() * (awacsUp() ? 1.12 : 1);
+  if (f.tac.roe === 'FREE') pk *= 0.92;
+  return { hit: Math.random() < pk, call: w === 'aim120' ? 'Fox Three' : w === 'aim9' ? 'Fox Two' : 'guns, guns' };
+}
+function defend(a, f, kind) {
+  const cm = kind === 'radar' ? 'chaff' : 'flare';
+  let ev = 0.3;
+  if (a.load[cm] >= 4) { a.load[cm] -= 4; ev = 0.74; }
+  const exp = F_DEF[f.tac.form] * (f.tac.aggr === 'AGG' ? 1.15 : f.tac.aggr === 'DEF' ? 0.8 : 1) * (TYPES[a.type].stealth ? 0.45 : 1) * (awacsUp() ? 0.9 : 1);
+  return Math.random() < 1 - (1 - ev) * exp;
+}
+function hitAircraft(a, f, src) {
+  a.cond -= rnd(25, 70) * (TYPES[a.type].armor || 1);
+  if (a.cond <= 0) {
+    a.cond = 0; a.status = 'lost'; a.flight = null; a.phase = null; a.fuel = 0;
+    f.members = f.members.filter(id => id !== a.id);
+    S.stats.lost++; S.rep = Math.max(0, S.rep - 12);
+    log(`${a.call} shot down by ${src}. ${a.pilot} ejected and was recovered by CSAR. Rating −12.`, 'crit');
+  } else radio(`${a.call}: I'm hit, ${Math.round(100 - a.cond)}% damage, still flying.`);
+}
+function airCombat(f, en, dt) {
+  for (const a of members(f)) {
+    if (en.n <= 0) break;
+    if (Math.random() < 0.45 * AGGR[f.tac.aggr] * ROE[f.tac.roe] * dt) {
+      const s = shoot(a, f, en.skill);
+      if (s) {
+        radio(`${a.call}: ${s.call}.`);
+        if (s.hit) { en.n--; S.stats.kills++; addXP(4); radio(`${a.call}: splash one${en.n ? '' : ', picture clean'}.`); }
+      }
+    }
+  }
+  for (let i = 0; i < en.n; i++) {
+    if (Math.random() >= 0.2 * (0.6 + en.skill) * dt) continue;
+    const ms = members(f); if (!ms.length) return;
+    const a = pick(ms), kind = Math.random() < 0.55 ? 'radar' : 'ir';
+    if (defend(a, f, kind)) radio(`${a.call}: missile inbound, ${kind === 'radar' ? 'chaff' : 'flares'}, defeated.`);
+    else hitAircraft(a, f, en.label);
+  }
+}
+function samFire(f, sam, dt) {
+  if (!sam) return;
+  for (const a of members(f)) {
+    if (Math.random() >= 0.07 * sam * ({ LOW: 0.8, MED: 1, HIGH: 1.1 }[f.tac.alt]) * (TYPES[a.type].stealth ? 0.5 : 1) * dt) continue;
+    if (defend(a, f, Math.random() < 0.7 ? 'radar' : 'ir')) radio(`${a.call}: SAM launch, defending, missile defeated.`);
+    else hitAircraft(a, f, 'a surface-to-air missile');
+  }
+}
+function strikeRun(f, m, dt) {
+  const ms = members(f);
+  if (f.tac.roe !== 'HOLD') for (const a of ms) {
+    if (Math.random() >= 0.5 * AGGR[f.tac.aggr] * dt) continue;
+    const w = a.load.gbu12 > 0 ? 'gbu12' : a.load.agm65 > 0 ? 'agm65' : null;
+    if (!w) {
+      if (!TYPES[a.type].gunStrike || a.load.gun < 200) continue;
+      a.load.gun -= 200;
+      if (Math.random() < 0.55 * wxMul()) { m.hp -= 1.2; radio(`${a.call}: guns run, good effect on target.`); } else radio(`${a.call}: guns run, rounds long.`);
+      continue;
+    }
+    a.load[w]--;
+    const p = (w === 'gbu12' ? 0.72 : 0.7) * ({ LOW: 1.12, MED: 1, HIGH: 0.85 }[f.tac.alt]) * (1 - a.fatigue / 260) * wxMul();
+    if (Math.random() < p) { m.hp -= w === 'gbu12' ? 2 : 1.6; radio(`${a.call}: ${w === 'gbu12' ? 'bombs away, good hits' : 'rifle, Maverick on target'}.`); }
+    else radio(`${a.call}: ${WLBL[w]} went wide.`);
+  }
+  samFire(f, m.sam, dt);
+  if (m.hp <= 0) return 'win';
+  if (!members(f).some(hasA2G)) return 'winchester';
+  return null;
+}
+function stepFlight(f, dt) {
+  const ms = members(f);
+  if (f.state === 'launch') {
+    const all = f.members.map(AC).filter(a => a && a.status !== 'lost');
+    if (!all.length) f.dead = true;
+    else if (all.every(a => a.status === 'air')) { f.state = 'enroute'; radio(`${f.call}: flight airborne, proceeding.`); }
+    return;
+  }
+  if (!ms.length) { f.dead = true; const m = MS(f.mission); if (m && m.status === 'active') missionFail(m, 'flight lost'); return; }
+  const combat = f.state === 'engaged' || (f.state === 'station' && f.kind === 'STRIKE');
+  for (const a of ms) { a.fuel = Math.max(0, a.fuel - burnRate(a, f, combat) * dt); a.fatigue = Math.min(100, a.fatigue + 0.6 * dt); }
+  f.trT += dt; if (f.trT >= 1.5) { f.trT = 0; f.trail.push([f.x, f.y]); if (f.trail.length > 40) f.trail.shift(); }
+  if (f.state === 'rtb') {
+    if (moveFlight(f, { x: 0, y: 0 }, dt) < 5) {
+      for (const a of ms) { a.status = 'arr'; a.phase = 'inbound'; a.phT = 0; }
+      f.dead = true; radio(`${f.call}: overhead Kestrel, ${ms.length} for landing.`);
+    }
+    return;
+  }
+  if (f.state === 'tanking') {
+    const tg = flightTarget(f);
+    if (!tg) { f.state = 'enroute'; radio(`${f.call}: tanker left the track.`); return; }
+    if (moveFlight(f, tg, dt) < 6 && (f.refT += dt) >= 3) {
+      const t = FL(f.tanker); let off = t ? t.offload : 0;
+      for (const a of ms) { const T = TYPES[a.type], g = Math.min((100 - a.fuel) / 100 * T.fuelKL, off); off -= g; a.fuel += g / T.fuelKL * 100; }
+      if (t) t.offload = off;
+      f.refT = 0; f.state = 'enroute'; radio(`${f.call}: tanking complete, back to the fight.`);
+    }
+    return;
+  }
+  if (isSupport(f)) {
+    const d = moveFlight(f, flightTarget(f), dt);
+    if (f.state === 'enroute' && d < 4) { f.state = 'station'; radio(f.kind === 'AWACS' ? `${f.call}: on station, picture is up. All flights, check in.` : `${f.call}: on station, tanker track open.`); }
+    if (f.state === 'station') { f.stT += dt; f.x = f.tx + Math.cos(f.stT * 0.5) * 6; f.y = f.ty + Math.sin(f.stT * 0.5) * 6; f.hdg = f.stT * 0.5 + Math.PI / 2; }
+    if (f.kind === 'TANKER' && f.offload < 2) goRTB(f, 'offload complete'); else if (bingo(f)) goRTB(f, 'bingo fuel');
+    return;
+  }
+  const m = MS(f.mission);
+  if (!m || m.status !== 'active') { goRTB(f, 'no tasking'); return; }
+  if (bingo(f)) { goRTB(f, 'bingo fuel'); return; }
+  if (ms.some(a => a.cond < 35)) { goRTB(f, 'battle damage'); return; }
+  if (m.type === 'INTERCEPT') {
+    const r = raidOf(m); if (!r) return;
+    const range = (f.tac.alt === 'HIGH' ? 40 : 28) * (f.tac.form === 'LINE' ? 1.15 : 1) + (awacsUp() ? 15 : 0);
+    if (f.state === 'enroute') {
+      if (moveFlight(f, r, dt) < range) { f.state = 'engaged'; r.engaged = f.id; radio(`${f.call}: tally ${r.n} bandits, engaging.`); }
+    } else if (f.state === 'engaged') {
+      moveFlight(f, r, dt * 0.3); airCombat(f, r, dt);
+      if (r.n <= 0) { S.raids = S.raids.filter(x => x !== r); missionWin(m, f); }
+      else if (!members(f).some(hasA2A)) goRTB(f, 'Winchester, no weapons left');
+    }
+    return;
+  }
+  if (f.state === 'enroute') {
+    if (moveFlight(f, m, dt) < 4) { f.state = 'station'; f.stT = 0; radio(`${f.call}: on station, Op. ${m.op}.`); }
+    return;
+  }
+  if (f.state === 'station') {
+    f.stT += dt; f.x = m.x + Math.cos(f.stT * 0.8) * 5; f.y = m.y + Math.sin(f.stT * 0.8) * 5; f.hdg = f.stT * 0.8 + Math.PI / 2;
+    if (m.type === 'CAP') {
+      if (Math.random() < m.threat * 0.035 * dt) {
+        f.enemy = { n: irnd(1, Math.min(4, m.threat)), skill: rnd(0.2, 0.4 + m.threat * 0.08), label: 'enemy fighters' };
+        f.state = 'engaged'; radio(`${f.call}: ${f.enemy.n} bandits, committing.`);
+      } else if (f.stT >= m.dur) missionWin(m, f);
+    } else if (m.type === 'RECON') {
+      samFire(f, m.sam, dt);
+      if (f.stT >= m.dur && members(f).length) missionWin(m, f);
+    } else if (m.type === 'STRIKE') {
+      const r = strikeRun(f, m, dt);
+      if (r === 'win') missionWin(m, f); else if (r === 'winchester') goRTB(f, 'out of air-to-ground stores');
+    }
+    return;
+  }
+  if (f.state === 'engaged' && f.enemy) {
+    airCombat(f, f.enemy, dt);
+    if (f.enemy.n <= 0) { f.enemy = null; f.state = 'station'; radio(`${f.call}: resuming CAP.`); }
+    else if (!members(f).some(hasA2A)) goRTB(f, 'Winchester, no weapons left');
+  }
+}
+function orderTanker(f) {
+  const t = tankerOnStation();
+  if (!t || isSupport(f) || f.state === 'rtb' || f.state === 'launch' || f.state === 'tanking') return;
+  const m = MS(f.mission); const r = m && raidOf(m); if (r && r.engaged === f.id) r.engaged = null;
+  f.state = 'tanking'; f.tanker = t.id; f.refT = 0; f.enemy = null;
+  radio(`${f.call}: heading to ${t.call} for fuel.`);
+}
+
+// ---------- Raids on the base ----------
+function stepRaids(dt) {
+  for (const r of S.raids) {
+    const by = r.engaged && FL(r.engaged);
+    if (by && by.state === 'engaged') continue;
+    r.engaged = null;
+    const d = hyp(r.x, r.y), k = Math.min(1, r.speed * dt / Math.max(d, 0.01));
+    r.x -= r.x * k; r.y -= r.y * k;
+    airDefense(r, hyp(r.x, r.y), dt);
+    if (r.n <= 0) { raidDestroyedByBase(r); r.dead = true; }
+    else if (d < 14) { baseAttack(r); r.dead = true; }
+  }
+  S.raids = S.raids.filter(r => !r.dead);
+}
+function airDefense(r, d, dt) {
+  if (S.base.patriot && d < 80 && S.res.pac3 >= 1 && Math.random() < 0.35 * S.base.patriot * dt) {
+    S.res.pac3--;
+    const hit = Math.random() < 0.6; if (hit) r.n--;
+    S.fx.push({ kind: 'sam', site: 'pat', i: irnd(0, S.base.patriot - 1), born: S.t, life: 1.6, dir: Math.sign(r.x) || 1 });
+    radio(`Patriot: missile away${hit ? ', target destroyed' : ', missed'}. ${r.n} ${r.n === 1 ? 'bandit' : 'bandits'} remaining.`);
+  }
+  if (r.n > 0 && S.base.shorad && d < 22 && S.res.stinger >= 1 && Math.random() < 0.6 * S.base.shorad * dt) {
+    S.res.stinger--;
+    const hit = Math.random() < 0.45; if (hit) r.n--;
+    S.fx.push({ kind: 'sam', site: 'sho', i: irnd(0, S.base.shorad - 1), born: S.t, life: 1.2, dir: Math.sign(r.x) || 1 });
+    radio(`Avenger: Stinger away${hit ? ', splash one' : ', no kill'}.`);
+  }
+}
+function raidDestroyedByBase(r) {
+  const m = MS(r.mission);
+  if (!m || !(m.status === 'open' || m.status === 'active')) return;
+  const f = FL(m.flight);
+  closeMission(m, 'done');
+  const pay = Math.round(m.reward / 2);
+  S.funds += pay; S.rep = Math.min(100, S.rep + m.rep); S.stats.won++;
+  log(`Op. ${m.op}: raid wiped out by base air defences. ${money(pay)} bonus, rating +${m.rep}.`, 'good');
+  addXP(10 + m.threat * 5);
+  if (f) goRTB(f, 'raid destroyed');
+}
+function baseAttack(r) {
+  if (S.shift) S.shift.raidsHit++;
+  const sev = clamp(r.n / (r.n0 || r.n), 0.3, 1);
+  const fuelLoss = Math.round(S.res.fuel * rnd(0.15, 0.3) * sev);
+  S.res.fuel -= fuelLoss;
+  const kits = Math.min(4, S.res.parts); S.res.parts -= kits;
+  S.runway.closedUntil = S.t + (kits >= 4 ? 40 : 90);
+  let extra = '';
+  const parked = S.fleet.filter(a => a.status === 'ready' && !slotInfo(a.slot).hangar);
+  if (parked.length && Math.random() < 0.6) { const a = pick(parked); a.cond = Math.max(5, a.cond - rnd(30, 60)); extra = ` ${a.call} damaged on the ramp.`; }
+  S.fx.push({ kind: 'raid', born: S.t, life: 4 }, { kind: 'smoke', x: rnd(0.25, 0.75), at: 'rwy', born: S.t, life: 90 }, { kind: 'smoke', x: 0.915, at: 'farm', born: S.t, life: 140 });
+  log(`AIR RAID on Kestrel Field. ${fuelLoss} kL of fuel burned, runway closed for ${fmtDur(S.runway.closedUntil - S.t)}.${extra}`, 'crit');
+  const m = MS(r.mission); if (m && (m.status === 'open' || m.status === 'active')) missionFail(m, 'the raid reached the base');
+}
+
+// ---------- Tasking ----------
+function genMission(type) {
+  const day = Math.floor(S.t / 1440);
+  if (!type) {
+    const p = Math.min(0.35, 0.14 + day * 0.05), r = Math.random();
+    type = r < p ? 'INTERCEPT' : r < p + 0.32 ? 'CAP' : r < p + 0.62 ? 'STRIKE' : 'RECON';
+  }
+  const threat = clamp(irnd(1, 3) + Math.floor(day / 2) + (Math.random() < 0.2 ? 1 : 0), 1, 5);
+  const ang = rnd(0, Math.PI * 2), dist = rnd(70, 230);
+  const used = new Set(S.missions.map(m => m.op));
+  const m = { id: 'M' + (S.nextId++), op: pick(OPS.filter(o => !used.has(o))) || pick(OPS), type, threat,
+    x: Math.cos(ang) * dist, y: Math.sin(ang) * dist, status: 'open', flight: null, born: S.t };
+  if (type === 'CAP') { m.dur = irnd(16, 26); m.reward = 200 + threat * 80; m.rep = 4; m.expires = S.t + 100; m.need = 'A2A';
+    m.brief = `Hold a combat air patrol for ${m.dur} min. Expect up to ${Math.min(4, threat)} enemy fighters.`; }
+  if (type === 'STRIKE') { m.hp = m.hp0 = 3 + threat; m.sam = threat; m.reward = 380 + threat * 120; m.rep = 6; m.expires = S.t + 160; m.need = 'STRIKE';
+    m.brief = `Destroy ${pick(TARGETS)}. SAM threat level ${threat}. Needs GBU-12 or AGM-65 loads.`; }
+  if (type === 'RECON') { m.dur = 4; m.sam = Math.max(0, threat - 2); m.reward = 140 + threat * 50; m.rep = 3; m.expires = S.t + 130; m.need = 'CAP';
+    m.brief = `Overfly ${pick(RECON)} and hold ${m.dur} min for imagery. Light air defences.`; }
+  if (type === 'INTERCEPT') {
+    const d0 = rnd(250, 290) + (awacsUp() ? 45 : 0); m.x = Math.cos(ang) * d0; m.y = Math.sin(ang) * d0;
+    const n = clamp(irnd(1, threat) + 1, 2, 6);
+    m.reward = 300 + threat * 100; m.rep = 8; m.expires = null; m.need = 'A2A';
+    m.brief = `${n} enemy fighters inbound to Kestrel Field. Intercept them before they reach the base.`;
+    S.raids.push({ id: 'R' + (S.nextId++), mission: m.id, x: m.x, y: m.y, n, n0: n, skill: rnd(0.25, 0.4 + threat * 0.08), speed: rnd(7, 9.5), label: 'enemy fighters', engaged: null });
+    log(`RADAR: ${n} hostile contacts bearing ${bearingName(m.x, m.y)}, ${Math.round(d0)} km, inbound. Op. ${m.op}: scramble.`, 'crit');
+  }
+  m.sector = sectorName(m.x, m.y);
+  S.missions.push(m);
+  if (type !== 'INTERCEPT') log(`New tasking: Op. ${m.op}, ${type.toLowerCase()} in sector ${m.sector}.`);
+  return m;
+}
+function newWeather() {
+  const r = Math.random();
+  const kind = r < 0.45 ? 'clear' : r < 0.72 ? 'cloudy' : r < 0.88 ? 'rain' : r < 0.95 ? 'fog' : 'storm';
+  S.wx = { kind, wind: Math.round(rnd(230, 310) / 10) * 10, kt: irnd(4, kind === 'storm' ? 28 : 16), until: S.t + rnd(150, 320) };
+  log(`Weather: ${WX_NAME[kind]}, wind ${S.wx.wind}° at ${S.wx.kt} kt.`);
+}
+function threatLevel() {
+  if (!S.raids.length) return 'GREEN';
+  return Math.min(...S.raids.map(r => hyp(r.x, r.y))) < 150 ? 'RED' : 'AMBER';
+}
+
+// ---------- World step ----------
+function step(dt) {
+  S.t += dt;
+  tickTasks(dt);
+  tickGround(dt);
+  for (const f of S.flights) stepFlight(f, dt);
+  S.flights = S.flights.filter(f => !f.dead);
+  stepRaids(dt);
+  tickBase(dt);
+  for (const m of S.missions) {
+    if (m.status === 'open' && m.expires && S.t >= m.expires) {
+      closeMission(m, 'expired'); S.rep = Math.max(0, S.rep - 3); S.stats.expired = (S.stats.expired || 0) + 1; log(`Op. ${m.op} expired unflown. Rating −3.`, 'warn');
+    }
+  }
+  S.missions = S.missions.filter(m => m.status === 'open' || m.status === 'active' || S.t - m.closedAt < 45);
+  if (S.t >= S.nextMission) {
+    if (S.missions.filter(m => m.status === 'open' || m.status === 'active').length < 5) genMission();
+    S.nextMission = S.t + rnd(28, 55) - Math.min(15, Math.floor(S.t / 1440) * 3);
+  }
+  const di = Math.floor((S.t - 360) / 1440);
+  if (di > S.budgetDay) { S.budgetDay = di; const amt = Math.round((700 + S.rep * 6) * budgetMul()); S.funds += amt; log(`06:00 budget allocation: ${money(amt)}.`, 'good'); }
+  if (S.t >= S.wx.until) newWeather();
+  S.fx = S.fx.filter(x => S.t - x.born < x.life);
+  if (isCampaign() && S.shift && !S.debrief && !S.over && S.t >= S.shift.end) endShift();
+  if (S.rep <= 0 && !S.over) { S.over = true; log('Command rating reached zero. You have been relieved of command.', 'crit'); }
+}
+// ---------- Base development, training, procurement ----------
+function buildBlock(k) {
+  const U = UPGRADES[k];
+  if (S.base[k] >= U.max) return 'Fully built';
+  const lk = lockReason('up:' + k); if (lk) return lk;
+  if (S.build) return 'Engineers busy';
+  if (S.funds < U.cost) return 'No budget';
+  return null;
+}
+function startBuild(k) {
+  if (buildBlock(k)) return;
+  const U = UPGRADES[k];
+  S.funds -= U.cost;
+  S.build = { key: k, start: S.t, done: S.t + U.time };
+  log(`Engineers started work: ${U.name} ${S.base[k] + 1}. Ready in ${fmtDur(U.time)}.`);
+}
+function trainBlock(kind) {
+  const lk = lockReason('train:' + kind); if (lk) return lk;
+  if (S.training) return 'Instructors busy';
+  if (kind === 'crew' && S.crews >= CREW_MAX) return 'Crew limit reached';
+  if (kind === 'pilot' && S.pilots.length >= PILOT_MAX) return 'Pilot pool full';
+  if (S.funds < (kind === 'crew' ? CREW_COST : PILOT_COST)) return 'No budget';
+  return null;
+}
+function startTraining(kind) {
+  if (trainBlock(kind)) return;
+  const cost = kind === 'crew' ? CREW_COST : PILOT_COST, time = kind === 'crew' ? CREW_TIME : PILOT_TIME;
+  S.funds -= cost;
+  S.training = { kind, start: S.t, done: S.t + time };
+  log(`Training started: ${kind === 'crew' ? 'new ground crew' : 'new pilot'}, qualified in ${fmtDur(time)}.`);
+}
+function swapPilot(a) {
+  if (!a || a.status !== 'ready' || !S.pilots.length) return;
+  const best = S.pilots.slice().sort((x, y) => x.fatigue - y.fatigue)[0];
+  if (best.fatigue >= a.fatigue) return;
+  S.pilots.splice(S.pilots.indexOf(best), 1);
+  S.pilots.push({ name: a.pilot, fatigue: a.fatigue });
+  log(`${best.name} takes over ${a.call}. ${a.pilot} goes to crew rest.`);
+  a.pilot = best.name; a.fatigue = best.fatigue;
+}
+function buyBlock(type) {
+  const lk = lockReason('type:' + type); if (lk) return lk;
+  if (freeSlot(type) < 0) return 'No parking, build a hangar';
+  if (S.funds < TYPES[type].price) return 'No budget';
+  return null;
+}
+function buyAircraft(type) {
+  if (buyBlock(type)) return;
+  const T = TYPES[type];
+  S.funds -= T.price;
+  const n = S.fleet.filter(a => a.type === type).length + 1;
+  const a = { id: 'A' + (S.nextId++), call: `${T.call} ${T.grp}-${n}`, type, tail: `${irnd(86, 99)}-0${irnd(100, 999)}`, pilot: newPilotName(),
+    slot: freeSlot(type), status: 'ordered', phase: null, phT: 0, task: null, queue: [], fuel: 60, cond: 100, fatigue: 25,
+    loadout: null, load: mkLoad(type, null), flight: null, replacing: S.t + REPLACE_ETA };
+  S.fleet.push(a);
+  log(`Ordered a ${type} for ${money(T.price)}. ${a.call} arrives on a ferry flight in ${fmtDur(REPLACE_ETA)}.`);
+}
+function tickBase(dt) {
+  const rest = S.base.quarters ? 0.6 : 0.3;
+  for (const a of S.fleet) {
+    if (a.status === 'ready') a.fatigue = Math.max(0, a.fatigue - rest * dt);
+    if ((a.status === 'lost' || a.status === 'ordered') && a.replacing && S.t >= a.replacing) {
+      const fresh = a.status === 'ordered';
+      Object.assign(a, { status: 'arr', phase: 'inbound', phT: 0, fuel: 55, cond: 100, fatigue: fresh ? a.fatigue : 30, loadout: null, load: mkLoad(a.type, null), replacing: null });
+      if (!fresh) a.tail = `${irnd(86, 96)}-0${irnd(100, 999)}`;
+      radio(`${a.call}: ${fresh ? 'new' : 'replacement'} ${a.type} on ferry flight, inbound Kestrel.`);
+    }
+  }
+  for (const p of S.pilots) p.fatigue = Math.max(0, p.fatigue - rest * dt);
+  if (S.build && S.t >= S.build.done) {
+    const k = S.build.key, U = UPGRADES[k];
+    S.base[k]++; S.build = null;
+    if (k === 'patriot') S.res.pac3 = Math.min(capOf('pac3'), S.res.pac3 + 4);
+    if (k === 'shorad') S.res.stinger = Math.min(capOf('stinger'), S.res.stinger + 6);
+    log(`${U.name} ${S.base[k]} is complete.${k === 'patriot' ? ' Delivered with 4 interceptors.' : k === 'shorad' ? ' Delivered with 6 Stingers.' : k === 'hangar' ? ' Two more aircraft spaces.' : ''}`, 'good');
+  }
+  if (S.training && S.t >= S.training.done) {
+    if (S.training.kind === 'crew') { S.crews++; log(`A new ground crew has qualified. ${S.crews} crews on the flightline.`, 'good'); }
+    else { const name = newPilotName(); S.pilots.push({ name, fatigue: 0 }); log(`${name} has qualified and joined the spare pilot pool.`, 'good'); }
+    S.training = null;
+    startTasks();
+  }
+}
+// ---------- Campaign: 8-hour shifts, objectives, XP, ranks, unlocks ----------
+const CAREER = [
+  { name: 'Second Lieutenant',  short: '2nd Lt',   xp: 0,    unlocks: ['type:F-16C', 'type:KC-135R', 'up:hangar', 'up:fuelfarm'] },
+  { name: 'First Lieutenant',   short: '1st Lt',   xp: 400,  unlocks: ['train:crew', 'up:shorad', 'up:bunker', 'type:F-15E'] },
+  { name: 'Captain',            short: 'Capt',     xp: 1100,  unlocks: ['type:F/A-18E', 'train:pilot', 'up:quarters'] },
+  { name: 'Major',              short: 'Maj',      xp: 2100, unlocks: ['type:A-10C', 'up:patriot'] },
+  { name: 'Lieutenant Colonel', short: 'Lt Col',   xp: 3500, unlocks: ['type:E-3G'] },
+  { name: 'Colonel',            short: 'Col',      xp: 5300, unlocks: ['type:F-35A'] },
+  { name: 'Brigadier General',  short: 'Brig Gen', xp: 7500, unlocks: ['perk:budget'] },
+];
+const SHIFT_LEN = 480;
+const SHIFT_NAMES = { 6: 'Day shift', 14: 'Swing shift', 22: 'Night shift' };
+const OBJ_POOL = ['nolost', 'noraid', 'fuel', 'kills', 'sorties', 'rating', 'nofail'];
+const isCampaign = () => S.mode === 'campaign';
+function rankIdx(xp = S.xp || 0) { let r = 0; CAREER.forEach((c, i) => { if (xp >= c.xp) r = i; }); return r; }
+function unlockName(key) {
+  const [k, v] = key.split(':');
+  if (k === 'type') return v;
+  if (k === 'up') return UPGRADES[v].name;
+  if (k === 'train') return v === 'crew' ? 'Ground crew training' : 'Pilot training';
+  return 'Daily budget +50%';
+}
+function lockReason(key) {
+  if (!isCampaign()) return null;
+  const i = CAREER.findIndex(c => c.unlocks.includes(key));
+  return i > rankIdx() ? `Unlocks at ${CAREER[i].name}` : null;
+}
+function budgetMul() { if (!isCampaign()) return 1; const r = rankIdx(); return 1 + 0.08 * r + (r >= 6 ? 0.5 : 0); }
+function addXP(n) {
+  if (!isCampaign() || !n) return;
+  const before = rankIdx();
+  S.xp += Math.round(n);
+  for (let r = before + 1; r <= rankIdx(); r++) {
+    S.funds += 500;
+    log(`PROMOTED to ${CAREER[r].name}. Unlocked: ${CAREER[r].unlocks.map(unlockName).join(', ')}. $500K command bonus.`, 'good');
+  }
+}
+
+function mkObjective(id, n) {
+  if (id === 'ops') return { id, n: Math.min(5, 2 + Math.floor(n / 3)) };
+  if (id === 'fuel') return { id, n: Math.min(Math.round(capOf('fuel') * 0.45 / 10) * 10, 150 + 25 * Math.min(n, 8)) };
+  if (id === 'kills') return { id, n: 2 + Math.floor(n / 2) };
+  if (id === 'sorties') return { id, n: 4 + n };
+  return { id };
+}
+function objText(o) {
+  return { ops: `Complete ${o.n} operations`, nolost: 'Lose no aircraft', noraid: 'Keep every raid off the base',
+    fuel: `End the shift with at least ${o.n} kL of fuel`, kills: `Shoot down ${o.n} enemy aircraft`, sorties: `Fly ${o.n} sorties`,
+    rating: 'End with a higher command rating than you started', nofail: 'No failed or expired operations' }[o.id];
+}
+function objState(o) {
+  const sh = S.shift, d = k => (S.stats[k] || 0) - (sh.s0[k] || 0);
+  const count = (v, n) => ({ done: v >= n, label: `${Math.min(v, n)} / ${n}` });
+  switch (o.id) {
+    case 'ops': return count(d('won'), o.n);
+    case 'kills': return count(d('kills'), o.n);
+    case 'sorties': return count(d('sorties'), o.n);
+    case 'nolost': { const v = d('lost'); return { done: !v, failed: v > 0, label: v ? `${v} lost` : 'On track' }; }
+    case 'noraid': return { done: !sh.raidsHit, failed: sh.raidsHit > 0, label: sh.raidsHit ? `${sh.raidsHit} hit the base` : 'On track' };
+    case 'nofail': { const v = d('failed') + d('expired'); return { done: !v, failed: v > 0, label: v ? `${v} failed` : 'On track' }; }
+    case 'fuel': return { done: S.res.fuel >= o.n, label: `${Math.round(S.res.fuel)} / ${o.n} kL` };
+    case 'rating': return { done: S.rep > sh.rep0, label: `${Math.round(S.rep)} vs ${Math.round(sh.rep0)}` };
+  }
+  return { done: false, label: '' };
+}
+function shiftName(t) { return SHIFT_NAMES[Math.round(hourOf(t)) % 24] || 'Shift'; }
+function beginShift() {
+  const n = (S.shiftsDone || 0) + 1, pool = OBJ_POOL.slice(), picks = [];
+  while (picks.length < 2) picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  S.shift = { n, name: shiftName(S.t), start: S.t, end: S.t + SHIFT_LEN, s0: { ...S.stats }, rep0: S.rep, xp0: S.xp, raidsHit: 0,
+    objectives: [mkObjective('ops', n), ...picks.map(id => mkObjective(id, n))] };
+  S.debrief = null;
+  log(`${S.shift.name} ${n} begins. Objectives: ${S.shift.objectives.map(objText).join('; ')}.`);
+}
+function endShift() {
+  const sh = S.shift, res = sh.objectives.map(o => objState(o).done), met = res.filter(Boolean).length;
+  const missionXP = S.xp - sh.xp0, xp = 60 + met * 40 + (met === res.length ? 40 : 0), cash = met * 150, r0 = rankIdx();
+  const d = k => (S.stats[k] || 0) - (sh.s0[k] || 0);
+  S.funds += cash; S.shiftsDone = sh.n; S.stars = (S.stars || 0) + met;
+  addXP(xp);
+  S.debrief = { n: sh.n, name: sh.name, objectives: sh.objectives.map((o, i) => ({ text: objText(o), done: res[i] })), met, xp, missionXP, cash, r0, r1: rankIdx(),
+    won: d('won'), kills: d('kills'), lost: d('lost'), raids: sh.raidsHit };
+  log(`${sh.name} ${sh.n} complete: ${met} of ${res.length} objectives, +${xp + missionXP} XP.`, 'good');
+}
+
+// ---------- Campaign screens ----------
+function xpBar() {
+  const r = rankIdx(), cur = CAREER[r], nxt = CAREER[r + 1];
+  const p = nxt ? (S.xp - cur.xp) / (nxt.xp - cur.xp) : 1;
+  return `<div class="xp"><div class="xpl"><b>${cur.name}</b><span>${S.xp} XP${nxt ? ` · ${nxt.xp - S.xp} to ${nxt.name}` : ' · highest rank'}</span></div>${progBar(p)}</div>`;
+}
+function debriefHTML() {
+  const d = S.debrief, promo = d.r1 > d.r0;
+  const unlocked = CAREER.slice(d.r0 + 1, d.r1 + 1).flatMap(c => c.unlocks).map(unlockName).join(', ');
+  return `<div class="brief" role="dialog" aria-labelledby="ovt"><p class="h">Shift report · ${d.name} ${d.n}</p>
+    <h1 id="ovt">${d.met === d.objectives.length ? 'Clean shift' : `${d.met} of ${d.objectives.length} objectives`}</h1>
+    <div class="objs">${d.objectives.map(o => `<div><span>${o.text}</span><span class="chip ${o.done ? 'ok' : 'crit'}">${o.done ? 'Done' : 'Missed'}</span></div>`).join('')}</div>
+    <p class="muted">${d.won} operations completed · ${d.kills} kills · ${d.lost} jets lost · ${d.raids} raids on the base</p>
+    <p>+${d.missionXP} XP from operations, +${d.xp} XP for the shift${d.cash ? `, ${money(d.cash)} budget bonus` : ''}.</p>
+    ${promo ? `<p class="okc">Promoted to ${CAREER[d.r1].name}. Unlocked: ${unlocked}.</p>` : ''}
+    ${xpBar()}
+    <div class="acts"><button class="btn go big" data-act="nextshift">Start ${shiftName(S.t)} ${d.n + 1}</button></div></div>`;
+}
+function careerHTML() {
+  const sh = S.shift, r = rankIdx();
+  const objs = sh ? sh.objectives.map(o => { const st = objState(o); return `<div><span>${objText(o)}</span><span class="chip ${st.done ? 'ok' : st.failed ? 'crit' : 'idle'}">${st.label}</span></div>`; }).join('') : '';
+  const ladder = CAREER.map((c, i) => `<div class="rk${i <= r ? ' got' : ''}${i === r ? ' cur' : ''}"><div><b>${c.name}</b><small>${c.xp.toLocaleString('en-US')} XP</small></div><span>${c.unlocks.map(unlockName).join(' · ')}</span></div>`).join('');
+  return `<div class="secH"><h2>Career</h2><p>${S.shiftsDone || 0} shifts served · ${S.stars || 0} objectives met</p></div>${xpBar()}
+    ${sh ? `<div class="secH" style="margin-top:18px"><h2>${sh.name} ${sh.n}</h2><p>Ends ${fmtClock(sh.end)}, in ${fmtDur(sh.end - S.t)}. Each objective met: +40 XP and ${money(150)}.</p></div><div class="objs">${objs}</div>` : ''}
+    <div class="secH" style="margin-top:18px"><h2>Ranks and unlocks</h2><p>XP comes from operations, kills and shift objectives.</p></div><div class="ladder">${ladder}</div>`;
+}
+// ---------- Window view: sky, scenery, airfield ----------
+const cv = $('#outside'), cx = cv.getContext('2d', { willReadFrequently: true });
+let PX = 3;   // size of one screen pixel of the window view, in CSS px
+let W = 300, H = 150, STARS = [], CLOUDS = [], TREES = [];
+const G = { hz: 0.40, bld: 0.478, rwy: 0.575, rwyH: 0.046, twy: 0.69, twyH: 0.024, apr: 0.875 };
+const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+const rgb = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const shade = (c, k) => c.map(v => Math.round(v * k));
+function ell(x, y, rx, ry) { cx.beginPath(); cx.ellipse(x, y, Math.max(0.0005, rx), Math.max(0.0005, ry), 0, 0, Math.PI * 2); cx.fill(); }
+function poly(pts) { cx.beginPath(); pts.forEach((p, i) => i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1])); cx.closePath(); cx.fill(); }
+function gsc(y) { return Math.max(0.18, lerp(0.5, 1, (y - G.rwy) / (G.apr - G.rwy))); }
+function UL() { return Math.min(W * 0.062, H * 0.21); }
+
+function sizeScene() {
+  const r = cv.getBoundingClientRect();
+  W = Math.max(60, r.width); H = Math.max(60, r.height);
+  PX = W > 1000 ? 3 : 2;
+  cv.width = Math.max(1, Math.round(W / PX)); cv.height = Math.max(1, Math.round(H / PX));
+  cx.setTransform(1 / PX, 0, 0, 1 / PX, 0, 0);
+}
+function initScenery() {
+  let s = 7; const sr = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  STARS = Array.from({ length: 80 }, () => [sr(), sr() * 0.36, sr()]);
+  TREES = Array.from({ length: 34 }, () => [sr(), 0.6 + sr() * 0.8]);
+  CLOUDS = Array.from({ length: 8 }, () => ({ x: sr() * 1.3 - 0.15, y: 0.04 + sr() * 0.24, s: 0.6 + sr() * 0.9, v: 0.004 + sr() * 0.008 }));
+}
+function daylight() {
+  const h = hourOf(S.t);
+  if (h < 5 || h >= 20.5) return 0;
+  if (h < 7) return (h - 5) / 2;
+  if (h >= 18.5) return 1 - (h - 18.5) / 2;
+  return 1;
+}
+function overcast() { return { clear: 0, cloudy: 0.55, rain: 0.85, fog: 0.7, storm: 1 }[S.wx.kind] || 0; }
+
+function drawSky(L, gold, ov, dtR) {
+  let top = mix([5, 8, 17], [70, 120, 168], L), bot = mix([15, 22, 38], [176, 201, 214], L);
+  top = mix(top, [42, 52, 92], gold * 0.6); bot = mix(bot, [228, 148, 96], gold * 0.75);
+  const gr = mix([20, 22, 26], [128, 136, 142], L);
+  top = mix(top, gr, ov * 0.75); bot = mix(bot, gr, ov * 0.65);
+  const g = cx.createLinearGradient(0, 0, 0, H * G.hz);
+  g.addColorStop(0, rgb(top)); g.addColorStop(1, rgb(bot));
+  cx.fillStyle = g; cx.fillRect(0, 0, W, H * G.hz + 2);
+  if (L < 0.35 && ov < 0.6) {
+    for (const st of STARS) { cx.fillStyle = `rgba(225,232,255,${((0.35 - L) / 0.35) * (1 - ov) * (0.35 + st[2] * 0.6)})`; cx.fillRect(st[0] * W, st[1] * H, PX, PX); }
+  }
+  const h = hourOf(S.t);
+  if (h > 5.5 && h < 20) {           // sun
+    const u = (h - 5.5) / 14.5, sx = lerp(0.92, 0.06, u) * W, sy = (G.hz - Math.sin(Math.PI * u) * 0.34) * H;
+    const rg = cx.createRadialGradient(sx, sy, 0, sx, sy, H * 0.22);
+    rg.addColorStop(0, `rgba(255,236,190,${0.9 * (1 - ov * 0.8)})`); rg.addColorStop(0.08, `rgba(255,214,150,${0.5 * (1 - ov)})`); rg.addColorStop(1, 'rgba(255,200,140,0)');
+    cx.fillStyle = rg; cx.fillRect(sx - H * 0.22, sy - H * 0.22, H * 0.44, H * 0.44);
+  } else if (ov < 0.7) {             // moon
+    const u = ((h + 4) % 24) / 9.5, mx = lerp(0.85, 0.15, clamp(u, 0, 1)) * W, my = (0.08 + Math.abs(u - 0.5) * 0.2) * H;
+    cx.fillStyle = `rgba(226,230,240,${0.85 * (1 - ov)})`; ell(mx, my, H * 0.022, H * 0.022);
+    cx.fillStyle = rgb(top); ell(mx + H * 0.009, my - H * 0.004, H * 0.02, H * 0.02);
+  }
+  const cc = mix(mix([50, 54, 68], [242, 242, 244], L), mix([30, 32, 36], [168, 172, 178], L), ov);
+  const n = Math.round(4 + ov * 4);
+  for (let i = 0; i < n; i++) {
+    const c = CLOUDS[i];
+    c.x += c.v * dtR * (0.4 + S.wx.kt / 14) * (S.speed ? 1 : 0.2);
+    if (c.x > 1.25) c.x = -0.25;
+    const x = c.x * W, y = c.y * H, r = c.s * W * 0.05 * (1 + ov * 0.6);
+    cx.fillStyle = rgb(cc, 0.45 + ov * 0.45);
+    ell(x, y, r * 1.6, r * 0.45); ell(x - r * 0.7, y + r * 0.08, r * 0.9, r * 0.35); ell(x + r * 0.5, y - r * 0.2, r * 0.8, r * 0.42);
+  }
+}
+
+function drawFarSide(L, ov, now) {
+  const haze = mix(mix([12, 16, 20], [96, 112, 118], L), mix([20, 22, 26], [140, 146, 150], L), ov * 0.6);
+  cx.fillStyle = rgb(haze);
+  cx.beginPath(); cx.moveTo(0, G.hz * H);
+  for (let i = 0; i <= 40; i++) { const x = i / 40; cx.lineTo(x * W, (0.372 + Math.sin(i * 0.9) * 0.01 + Math.sin(i * 0.37 + 1) * 0.018) * H); }
+  cx.lineTo(W, G.hz * H); cx.closePath(); cx.fill();
+  const gTop = mix([18, 22, 22], [122, 132, 104], L), gBot = mix([12, 15, 14], [82, 98, 60], L);
+  const g = cx.createLinearGradient(0, G.hz * H, 0, H);
+  g.addColorStop(0, rgb(mix(gTop, haze, 0.3))); g.addColorStop(1, rgb(gBot));
+  cx.fillStyle = g; cx.fillRect(0, G.hz * H, W, H * (1 - G.hz));
+  const tree = mix([8, 11, 10], [52, 68, 50], L);
+  cx.fillStyle = rgb(mix(tree, haze, 0.35));
+  for (const t of TREES) ell(t[0] * W, G.hz * H + 1, W * 0.012 * t[1], H * 0.012 * t[1]);
+
+  const k = 0.22 + 0.78 * L, base = G.bld * H, night = 1 - L;
+  const box = (x, w, h, col) => { cx.fillStyle = rgb(shade(col, k)); cx.fillRect(x * W, base - h * H, w * W, h * H); };
+  drawHangars(k, night, now, base);
+  // ops building with window rows
+  box(0.39, 0.105, 0.034, [150, 146, 136]);
+  for (let r = 0; r < 2; r++) for (let i = 0; i < 9; i++) {
+    cx.fillStyle = night > 0.3 && (i * 7 + r * 3) % 5 ? `rgba(255,214,150,${0.35 + night * 0.5})` : rgb(shade([60, 70, 78], k));
+    cx.fillRect((0.397 + i * 0.0108) * W, base - (0.027 - r * 0.012) * H, W * 0.007, Math.max(PX, H * 0.006));
+  }
+  // control tower
+  box(0.515, 0.012, 0.12, [160, 156, 146]);
+  cx.fillStyle = rgb(shade([120, 118, 110], k)); cx.fillRect(0.504 * W, base - 0.152 * H, 0.034 * W, 0.006 * H);
+  cx.fillStyle = night > 0.3 ? `rgba(120,200,190,${0.4 + night * 0.4})` : rgb(shade([46, 72, 80], k));
+  cx.fillRect(0.506 * W, base - 0.146 * H, 0.03 * W, 0.024 * H);
+  cx.fillStyle = rgb(shade([90, 92, 90], k)); cx.fillRect(0.504 * W, base - 0.124 * H, 0.034 * W, 0.004 * H);
+  if (night > 0.2) { const on = (now / 900) % 2 < 1; cx.fillStyle = on ? 'rgba(120,255,150,.95)' : 'rgba(255,255,240,.95)'; ell(0.521 * W, base - 0.158 * H, PX, PX); }
+  // radar head
+  const rx = 0.578 * W;
+  cx.fillStyle = rgb(shade([110, 112, 108], k)); cx.fillRect(rx - 2, base - 0.05 * H, 4, 0.05 * H);
+  const span = Math.abs(Math.cos(now / 700)) * W * 0.016 + 1.5;
+  cx.fillStyle = rgb(shade([190, 190, 184], k)); cx.fillRect(rx - span, base - 0.058 * H, span * 2, 0.007 * H);
+  // fuel farm, tank tops tinted by stock level
+  const lvl = S.res.fuel / capOf('fuel');
+  for (const x of [0.86, 0.905, 0.95, 0.815, 0.77].slice(0, 3 + S.base.fuelfarm)) {
+    box(x - 0.015, 0.03, 0.036, [176, 178, 172]);
+    cx.fillStyle = rgb(shade([196, 198, 192], k)); ell(x * W, base - 0.036 * H, 0.015 * W, 0.004 * H);
+    cx.fillStyle = rgb(shade([96, 100, 98], k)); cx.fillRect((x - 0.015) * W, base - 0.036 * H * lvl - 1, 0.03 * W, PX);
+  }
+}
+
+function drawAirfield(L, now) {
+  const k = 0.22 + 0.78 * L, night = 1 - L;
+  const asph = shade([66, 68, 70], k), conc = shade([146, 146, 140], k), paint = `rgba(235,235,230,${0.35 + 0.4 * L})`;
+  const ry0 = (G.rwy - G.rwyH / 2) * H, rh = G.rwyH * H;
+  const ty0 = (G.twy - G.twyH / 2) * H, th = G.twyH * H;
+  cx.fillStyle = rgb(asph);
+  poly([[0.14 * W, ry0 + rh], [0.19 * W, ry0 + rh], [0.135 * W, ty0], [0.085 * W, ty0]]);
+  poly([[0.93 * W, ry0 + rh], [0.97 * W, ry0 + rh], [0.89 * W, ty0], [0.85 * W, ty0]]);
+  cx.fillRect(0, ry0, W, rh);
+  cx.fillStyle = rgb(shade([74, 76, 76], k)); cx.fillRect(0, ty0, W, th);
+  cx.fillStyle = paint;
+  cx.fillRect(0, ry0 + PX, W, PX); cx.fillRect(0, ry0 + rh - 2 * PX, W, PX);
+  for (let x = 0.08; x < 0.92; x += 0.05) cx.fillRect(x * W, ry0 + rh / 2 - PX / 2, 0.025 * W, PX);
+  for (let i = 1; i < 7; i++) { cx.fillRect(0.936 * W, ry0 + rh * i / 7.5, 0.026 * W, PX); cx.fillRect(0.038 * W, ry0 + rh * i / 7.5, 0.026 * W, PX); }
+  for (const x of [0.84, 0.8]) { cx.fillRect(x * W, ry0 + rh * 0.22, 0.02 * W, PX); cx.fillRect(x * W, ry0 + rh * 0.74, 0.02 * W, PX); }
+  cx.fillStyle = `rgba(232,190,60,${0.4 + 0.4 * L})`; cx.fillRect(0, G.twy * H - PX / 2, W, PX);
+  // apron and lead-in stubs
+  const ay = 0.765 * H;
+  cx.fillStyle = rgb(conc);
+  for (const x of [...SPOTS, CARGO_SPOT]) cx.fillRect((x - 0.018) * W, ty0 + th, 0.036 * W, ay - ty0 - th + 1);
+  cx.fillRect(0, ay, W, H - ay);
+  cx.strokeStyle = rgb(shade([112, 112, 106], k)); cx.lineWidth = PX; cx.beginPath();
+  for (let y = ay + 0.04 * H; y < H; y += 0.045 * H) { cx.moveTo(0, y); cx.lineTo(W, y); }
+  for (let x = 0.035; x < 1; x += 0.07) { cx.moveTo(x * W, ay); cx.lineTo(x * W, H); }
+  cx.stroke();
+  cx.fillStyle = `rgba(232,190,60,${0.45 + 0.4 * L})`;
+  cx.font = `${8 * PX}px "Silkscreen", monospace`; cx.textAlign = 'center';
+  [...SPOTS, CARGO_SPOT].forEach((x, i) => {
+    cx.fillRect(x * W - PX / 2, G.twy * H, PX, (G.apr - G.twy) * H);
+    cx.fillRect((x - 0.02) * W, G.apr * H + 3, 0.04 * W, PX);
+    cx.fillText(i < SPOTS.length ? pad2(i + 1) : 'C1', x * W, (G.apr + 0.07) * H);
+  });
+  if (S.t < S.runway.closedUntil) {          // runway closed: craters and X markers
+    cx.fillStyle = 'rgba(18,16,14,.85)';
+    for (const f of S.fx) if (f.kind === 'smoke' && f.at === 'rwy') ell(f.x * W, G.rwy * H, W * 0.022, rh * 0.32);
+    cx.strokeStyle = 'rgba(245,210,70,.85)'; cx.lineWidth = PX;
+    for (const x of [0.22, 0.6]) { cx.beginPath(); cx.moveTo(x * W - rh * 0.5, ry0 + 2); cx.lineTo(x * W + rh * 0.5, ry0 + rh - 2); cx.moveTo(x * W + rh * 0.5, ry0 + 2); cx.lineTo(x * W - rh * 0.5, ry0 + rh - 2); cx.stroke(); }
+  }
+  drawBaseExtras(L, k, now);
+  if (night > 0.25) {
+    const a = (night - 0.25) / 0.75;
+    for (let x = 0.01; x < 1; x += 0.04) { cx.fillStyle = `rgba(255,240,200,${0.85 * a})`; cx.fillRect(x * W, ry0 - PX / 2, PX, PX); cx.fillRect(x * W, ry0 + rh - PX / 2, PX, PX); }
+    for (let i = 0; i < 6; i++) { cx.fillStyle = `rgba(90,255,140,${a})`; cx.fillRect(0.972 * W, ry0 + rh * i / 5 - PX / 2, PX, PX); cx.fillStyle = `rgba(255,70,60,${a})`; cx.fillRect(0.012 * W, ry0 + rh * i / 5 - PX / 2, PX, PX); }
+    for (let x = 0.02; x < 1; x += 0.05) { cx.fillStyle = `rgba(80,140,255,${0.8 * a})`; cx.fillRect(x * W, ty0 - PX, PX, PX); cx.fillRect(x * W, ty0 + th, PX, PX); }
+    for (const x of [0.2, 0.5, 0.8]) {
+      const pg = cx.createRadialGradient(x * W, 0.9 * H, 0, x * W, 0.9 * H, W * 0.16);
+      pg.addColorStop(0, `rgba(255,214,150,${0.3 * a})`); pg.addColorStop(1, 'rgba(255,214,150,0)');
+      cx.fillStyle = pg; cx.fillRect(x * W - W * 0.16, 0.74 * H, W * 0.32, H * 0.26);
+    }
+  }
+  for (const x of [0.2, 0.5, 0.8]) {         // light masts
+    cx.fillStyle = rgb(shade([90, 92, 92], k)); cx.fillRect(x * W - PX / 2, 0.708 * H, PX, 0.06 * H);
+    cx.fillStyle = night > 0.25 ? 'rgba(255,230,180,.95)' : rgb(shade([150, 150, 146], k)); cx.fillRect(x * W - 2 * PX, 0.703 * H, 4 * PX, PX);
+  }
+}
+// ---------- Window view: aircraft, vehicles, effects ----------
+const SHAPES = {
+  'F-16C': { body: [[.5,0],[.36,-.035],[.2,-.055],[.1,-.1],[0,-.1],[-.08,-.065],[-.28,-.06],[-.36,-.27],[-.45,-.27],[-.47,-.06],[-.5,-.03],[-.5,.02],[-.3,.04],[.08,.05],[.3,.035]],
+    dark: [[[.14,.02],[-.2,.015],[-.27,.055],[-.02,.05]], [[-.3,.005],[-.5,-.005],[-.46,.05]], [[.2,.05],[.06,.095],[-.06,.05]]], canopy: [.1, -.072, .085, .03], col: [138, 146, 154] },
+  'F-15E': { body: [[.5,0],[.38,-.03],[.26,-.05],[.18,-.095],[.06,-.1],[-.04,-.07],[-.3,-.07],[-.33,-.29],[-.42,-.3],[-.44,-.07],[-.5,-.045],[-.5,.03],[-.3,.055],[.1,.06],[.3,.035]],
+    back: [[-.25,-.07],[-.27,-.25],[-.35,-.26],[-.36,-.07]],
+    dark: [[[.16,.025],[-.22,.02],[-.29,.06],[-.02,.058]], [[-.3,.0],[-.52,-.01],[-.47,.05]]], canopy: [.13, -.07, .1, .032], col: [96, 102, 108] },
+  'F/A-18E': { body: [[.5,0],[.38,-.03],[.24,-.045],[.16,-.09],[.05,-.095],[-.05,-.065],[-.26,-.06],[-.31,-.25],[-.4,-.26],[-.42,-.06],[-.5,-.035],[-.5,.025],[-.3,.045],[.1,.05],[.3,.03]],
+    back: [[-.22,-.06],[-.25,-.22],[-.33,-.23],[-.34,-.06]],
+    dark: [[[.14,.02],[-.2,.02],[-.26,.055],[-.04,.05]], [[-.32,0],[-.52,-.01],[-.47,.045]], [[.3,.02],[.06,.02],[0,.04],[.28,.035]]], canopy: [.14, -.066, .09, .03], col: [142, 150, 156] },
+  'A-10C': { body: [[.5,.01],[.44,-.03],[.34,-.05],[.27,-.085],[.16,-.085],[.08,-.05],[-.36,-.045],[-.5,-.03],[-.5,.02],[-.2,.045],[.36,.04]],
+    fin: [[-.38,-.04],[-.42,-.21],[-.5,-.21],[-.5,-.03]], back: [[-.34,-.04],[-.37,-.18],[-.44,-.18],[-.45,-.04]],
+    dark: [[[.12,-.005],[-.08,-.005],[-.08,.03],[.12,.03]], [[-.3,-.02],[-.52,-.03],[-.5,0]]], pods: [[-.18, -.095, .1, .032]], canopy: [.21, -.073, .06, .024], col: [94, 102, 98], ab: false, legs: [.3, -.02] },
+  'F-35A': { body: [[.5,0],[.36,-.04],[.22,-.07],[.12,-.1],[0,-.1],[-.1,-.07],[-.3,-.065],[-.34,-.22],[-.43,-.23],[-.45,-.065],[-.5,-.04],[-.5,.03],[-.3,.06],[.1,.065],[.32,.035]],
+    back: [[-.28,-.065],[-.3,-.2],[-.38,-.21],[-.39,-.065]],
+    dark: [[[.1,.03],[-.24,.025],[-.3,.06],[-.06,.062]], [[-.32,.01],[-.52,0],[-.48,.05]]], canopy: [.15, -.084, .08, .03], col: [106, 112, 116] },
+  'E-3G': { body: [[.5,.005],[.47,-.04],[.4,-.058],[-.3,-.058],[-.42,-.045],[-.5,-.03],[-.5,0],[-.42,.025],[.4,.038],[.48,.025]],
+    fin: [[-.3,-.055],[-.43,-.27],[-.49,-.27],[-.46,-.05]], dark: [[[.12,.01],[-.12,0],[-.2,.03],[.06,.032]]], col: [180, 184, 186], legs: [.38, -.02], ab: false, airliner: true, dome: true },
+  'KC-135R': { body: [[.5,.005],[.47,-.04],[.4,-.058],[-.3,-.058],[-.42,-.045],[-.5,-.03],[-.5,0],[-.42,.025],[.4,.038],[.48,.025]],
+    fin: [[-.3,-.055],[-.43,-.27],[-.49,-.27],[-.46,-.05]], dark: [[[.12,.01],[-.12,0],[-.2,.03],[.06,.032]]], col: [168, 172, 174], legs: [.38, -.02], ab: false, airliner: true, boom: true },
+  'C-130H': { body: [[.5,.02],[.48,-.04],[.42,-.08],[.3,-.095],[-.2,-.095],[-.4,-.055],[-.5,-.045],[-.5,-.01],[-.3,.06],[.38,.07],[.47,.05]],
+    fin: [[-.33,-.08],[-.42,-.36],[-.5,-.36],[-.47,-.04]], dark: [[[.2,-.095],[-.06,-.095],[-.06,-.118],[.2,-.118]]], col: [112, 118, 102], legs: [.4, .02, .12], ab: false },
+};
+const GEAR_H = { 'F-16C': .11, 'F-15E': .11, 'F/A-18E': .11, 'A-10C': .1, 'F-35A': .11, 'KC-135R': .085, 'E-3G': .085, 'C-130H': .1 };
+
+function along(pts, t) {
+  const seg = []; let L = 0;
+  for (let i = 1; i < pts.length; i++) { const d = hyp((pts[i][0] - pts[i - 1][0]) * W, (pts[i][1] - pts[i - 1][1]) * H); seg.push(d); L += d; }
+  let d = clamp(t, 0, 1) * L;
+  for (let i = 0; i < seg.length; i++) {
+    if (d <= seg[i] || i === seg.length - 1) {
+      const u = seg[i] ? clamp(d / seg[i], 0, 1) : 0, a = pts[i], b = pts[i + 1];
+      return { x: lerp(a[0], b[0], u), y: lerp(a[1], b[1], u), dx: b[0] - a[0] };
+    }
+    d -= seg[i];
+  }
+  return { x: pts[0][0], y: pts[0][1], dx: 0 };
+}
+const easeIO = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const FT = 0.523;   // far-side taxiway in front of the hangars
+const slotOf = o => o.type === 'C-130H' ? { x: CARGO_SPOT, hangar: false } : slotInfo(o.slot);
+function holdX(o, far) {
+  const q = [...S.fleet, ...S.cargo].filter(x => x.phase === 'hold' && !!slotOf(x).hangar === far).indexOf(o);
+  return far ? 0.905 - 0.05 * Math.max(0, q) : 0.865 - 0.075 * Math.max(0, q);
+}
+function pose(o) {
+  const si = slotOf(o), sx = si.x, far = !!si.hangar, ph = o.phase, b = { face: 1, pitch: 0 };
+  const faceOf = p => p.dx < -0.0001 ? -1 : 1;
+  const yS = far ? G.bld + 0.004 : G.apr, yT = far ? FT : G.twy;
+  if (!ph || ph === 'unload' || (ph === 'taxi' && o.phT <= 0)) return far ? null : { ...b, x: sx, y: G.apr, parked: true };
+  if (ph === 'taxi') { const t = clamp(o.phT / DEP.taxi, 0, 1), p = along([[sx, yS], [sx, yT], [holdX(o, far), yT]], easeIO(t)); return { ...b, x: p.x, y: p.y, face: faceOf(p), moving: true, alpha: far ? clamp(t * 8, 0, 1) : 1 }; }
+  if (ph === 'hold') return { ...b, x: holdX(o, far), y: yT, moving: true };
+  if (ph === 'roll') {
+    const t = clamp(o.phT / DEP.roll, 0, 1);
+    if (t < 0.2) { const p = along([[holdX(o, far), yT], [0.95, G.rwy]], t / 0.2); return { ...b, x: p.x, y: p.y, face: t < 0.12 ? 1 : -1, moving: true }; }
+    const u = Math.pow((t - 0.2) / 0.8, 2);
+    return { ...b, x: lerp(0.95, 0.4, u), y: G.rwy, face: -1, ab: true, pitch: u > 0.85 ? (u - 0.85) / 0.15 * 0.12 : 0, moving: true };
+  }
+  if (ph === 'climb') {
+    const t = clamp(o.phT / DEP.climb, 0, 1);
+    return { ...b, x: lerp(0.4, -0.15, t), y: lerp(G.rwy - 0.03, 0.06, Math.pow(t, 1.3)), face: -1, ab: t < 0.6, pitch: 0.17, lift: true, gear: t < 0.25, scale: lerp(0.5, 0.2, t), alpha: t > 0.85 ? (1 - t) / 0.15 : 1, moving: true };
+  }
+  if (ph === 'final') {
+    const t = clamp(o.phT / ARR.final, 0, 1);
+    return { ...b, x: lerp(1.15, 0.84, t), y: lerp(0.12, G.rwy - 0.03, 1 - Math.pow(1 - t, 1.3)), face: -1, pitch: 0.05, lift: true, gear: t > 0.3, scale: lerp(0.22, 0.5, t), landing: true, moving: true };
+  }
+  if (ph === 'rollout') { const t = clamp(o.phT / ARR.rollout, 0, 1); return { ...b, x: lerp(0.84, 0.16, 1 - Math.pow(1 - t, 2)), y: G.rwy, face: -1, moving: true }; }
+  if (ph === 'taxiin') { const t = clamp(o.phT / ARR.taxiin, 0, 1), p = along([[0.16, G.rwy], [far ? 0.13 : 0.11, yT], [sx, yT], [sx, yS]], easeIO(t)); return { ...b, x: p.x, y: p.y, face: faceOf(p), moving: true, alpha: far ? clamp((1 - t) * 8, 0, 1) : 1 }; }
+  return null;
+}
+
+function drawPlane(o, p, L, now) {
+  const sh = SHAPES[o.type], T = TYPES[o.type], k = 0.24 + 0.76 * L, night = 1 - L;
+  const len = UL() * (T.size || 1) * (p.scale ?? gsc(p.y)), X = p.x * W, Y = p.y * H, gh = GEAR_H[o.type];
+  cx.globalAlpha = p.alpha ?? 1;
+  if (p.lift) {
+    const gy = G.rwy * H, d = clamp(1 - (gy - Y) / (H * 0.45), 0, 1);
+    if (d > 0) { cx.fillStyle = `rgba(0,0,0,${0.22 * d * (0.3 + 0.7 * L)})`; ell(X + len * 0.1, gy + 2, len * 0.45 * d, len * 0.035 * d); }
+  } else { cx.fillStyle = `rgba(0,0,0,${0.15 + 0.2 * L})`; ell(X, Y, len * 0.5, len * 0.045); }
+  if (p.landing && night > 0.3) {
+    const lg = cx.createRadialGradient(X - len * 0.6, Y + len * 0.05, 0, X - len * 0.6, Y + len * 0.05, len * 1.4);
+    lg.addColorStop(0, `rgba(255,250,225,${0.45 * night})`); lg.addColorStop(1, 'rgba(255,250,225,0)');
+    cx.fillStyle = lg; cx.fillRect(X - len * 2, Y - len, len * 2.8, len * 2);
+  }
+  cx.save();
+  cx.translate(X, p.lift ? Y : Y - len * gh);
+  cx.scale(p.face, 1); cx.rotate(-(p.pitch || 0)); cx.scale(len, len);
+  const col = shade(sh.col, k), dark = shade(sh.col, k * 0.68);
+  if (p.gear !== false) {
+    cx.strokeStyle = rgb(shade([40, 42, 44], k)); cx.lineWidth = 0.014; cx.fillStyle = rgb(shade([26, 27, 28], k));
+    const legs = sh.legs || [0.28, -0.1];
+    for (const lx of legs) { cx.beginPath(); cx.moveTo(lx, 0.02); cx.lineTo(lx, gh - 0.02); cx.stroke(); ell(lx, gh - 0.02, 0.022, 0.022); }
+  }
+  if (p.ab && sh.ab !== false) {
+    const fl = 0.28 + Math.random() * 0.1, g = cx.createLinearGradient(-0.5, 0, -0.5 - fl, 0);
+    g.addColorStop(0, 'rgba(255,245,220,.95)'); g.addColorStop(0.25, 'rgba(255,170,70,.85)'); g.addColorStop(1, 'rgba(255,90,30,0)');
+    cx.fillStyle = g; poly([[-0.49, -0.035], [-0.5 - fl, -0.008], [-0.49, 0.02]]);
+  }
+  if (sh.back) { cx.fillStyle = rgb(dark); poly(sh.back); }
+  cx.fillStyle = rgb(col); poly(sh.body);
+  if (sh.fin) poly(sh.fin);
+  cx.fillStyle = rgb(dark); for (const d of sh.dark) poly(d);
+  if (sh.airliner) {
+    ell(0.1, 0.055, 0.07, 0.02); ell(-0.04, 0.05, 0.06, 0.018);
+    if (sh.boom) { cx.strokeStyle = rgb(dark); cx.lineWidth = 0.012; cx.beginPath(); cx.moveTo(-0.45, 0.02); cx.lineTo(-0.6, 0.09); cx.stroke(); }
+    if (sh.dome) {
+      cx.strokeStyle = rgb(dark); cx.lineWidth = 0.012; cx.beginPath(); cx.moveTo(-0.08, -0.055); cx.lineTo(-0.1, -0.13); cx.moveTo(-0.16, -0.055); cx.lineTo(-0.15, -0.13); cx.stroke();
+      cx.fillStyle = rgb(shade([58, 62, 68], k)); ell(-0.125, -0.145, 0.15, 0.026);
+      cx.fillStyle = rgb(shade([222, 222, 216], k)); cx.fillRect(-0.27, -0.15, 0.29, 0.008);
+    }
+    cx.fillStyle = night > 0.4 ? 'rgba(255,220,160,.8)' : rgb(shade([40, 50, 58], k));
+    for (let x = 0.33; x > -0.26; x -= 0.045) cx.fillRect(x, -0.03, 0.014, 0.012);
+    cx.fillStyle = rgb(shade([30, 40, 48], k)); poly([[0.47, -0.03], [0.43, -0.045], [0.42, -0.028]]);
+  } else if (o.type === 'C-130H') {
+    ell(0.14, -0.1, 0.07, 0.022); ell(0, -0.1, 0.07, 0.022); ell(0.05, 0.066, 0.13, 0.024);
+    cx.fillStyle = `rgba(30,32,34,${0.35})`; ell(0.215, -0.1, 0.006, 0.08); ell(0.075, -0.1, 0.006, 0.08);
+    cx.fillStyle = rgb(shade([30, 40, 48], k)); poly([[0.46, -0.03], [0.41, -0.07], [0.4, -0.035]]);
+  } else {
+    if (sh.pods) { cx.fillStyle = rgb(dark); for (const q of sh.pods) ell(...q); }
+    const [cxp, cyp, rx, ry] = sh.canopy, cg = cx.createLinearGradient(cxp, cyp - ry, cxp, cyp + ry);
+    cg.addColorStop(0, rgb(shade([150, 175, 185], k))); cg.addColorStop(1, rgb(shade([40, 52, 60], k)));
+    cx.fillStyle = cg; ell(cxp, cyp, rx, ry);
+  }
+  if (p.moving || p.lift) {
+    if ((now % 1100) < 90) { cx.fillStyle = 'rgba(255,60,50,.95)'; ell(-0.05, -0.1, 0.018, 0.018); }
+    if (night > 0.3) { cx.fillStyle = 'rgba(255,255,255,.9)'; ell(-0.46, -0.05, 0.012, 0.012); }
+  }
+  cx.restore();
+  cx.globalAlpha = 1;
+}
+
+function drawService(o, p, L, now) {
+  const kind = o.phase === 'unload' ? 'unload' : (o.task && p.parked ? o.task.kind : null);
+  if (!kind) return;
+  const k = 0.24 + 0.76 * L, len = UL() * (TYPES[o.type].size || 1), X = p.x * W, Y = p.y * H, u = UL() * 0.55;
+  const box = (x, y, w, h, c) => { cx.fillStyle = rgb(shade(c, k)); cx.fillRect(x, y - h, w, h); };
+  const wheel = (x, y) => { cx.fillStyle = rgb(shade([22, 22, 22], k)); ell(x, y, u * 0.07, u * 0.07); };
+  const person = (x, y) => { box(x - PX / 2, y, PX, u * 0.28, [40, 46, 52]); cx.fillStyle = `rgba(230,220,90,${0.5 + 0.4 * L})`; cx.fillRect(x - PX / 2, y - u * 0.22, PX, u * 0.08); };
+  if (kind === 'refuel') {
+    const tx = X + len * 0.55, ty = Y - 2;
+    box(tx, ty - u * 0.07, u * 0.75, u * 0.3, [200, 200, 188]); box(tx + u * 0.75, ty - u * 0.07, u * 0.25, u * 0.36, [150, 40, 34]);
+    wheel(tx + u * 0.12, ty); wheel(tx + u * 0.6, ty); wheel(tx + u * 0.88, ty);
+    cx.strokeStyle = rgb(shade([20, 20, 20], k)); cx.lineWidth = PX; cx.beginPath(); cx.moveTo(tx + 2, ty - u * 0.15); cx.quadraticCurveTo(tx - len * 0.15, ty + 4, X + len * 0.05, Y - len * 0.1); cx.stroke();
+    person(tx - u * 0.1, Y + 2);
+  } else if (kind === 'arm') {
+    const tx = X + len * 0.15, ty = Y + u * 0.35;
+    box(tx, ty - u * 0.06, u * 0.9, u * 0.08, [70, 82, 60]);
+    for (let i = 0; i < 3; i++) { cx.fillStyle = rgb(shade([215, 215, 205], k)); cx.fillRect(tx + u * 0.05, ty - u * (0.15 + i * 0.07), u * 0.8, u * 0.05); }
+    wheel(tx + u * 0.1, ty); wheel(tx + u * 0.8, ty);
+    person(X - len * 0.05, Y + 3); person(X + len * 0.12, Y + 2);
+  } else if (kind === 'repair') {
+    box(X - len * 0.32, Y, u * 0.12, len * 0.16, [190, 160, 60]);
+    box(X - len * 0.38, Y, u * 0.35, u * 0.06, [190, 160, 60]);
+    if ((now % 900) < 450) { cx.fillStyle = 'rgba(255,170,40,.95)'; ell(X - len * 0.27, Y - len * 0.17, 2.2, 2.2); }
+    person(X - len * 0.42, Y + 2); person(X + len * 0.3, Y + 3);
+  } else if (kind === 'unload') {
+    const sw = (Math.sin(now / 1200) + 1) / 2, fx = X - len * 0.62 - sw * len * 0.35, fy = Y + 3;
+    box(fx, fy - u * 0.06, u * 0.5, u * 0.28, [222, 176, 40]); box(fx - u * 0.12, fy - u * 0.06, u * 0.05, u * 0.5, [60, 60, 60]);
+    box(fx - u * 0.42, fy - u * 0.12, u * 0.32, u * 0.22, [110, 92, 64]);
+    wheel(fx + u * 0.1, fy); wheel(fx + u * 0.4, fy);
+    person(X - len * 0.5, Y + 2);
+  }
+}
+
+function drawSmoke(f, L, now) {
+  const age = (S.t - f.born) / f.life, fade = Math.min(1, (1 - age) * 3), bx = f.x * W, by = (f.at === 'farm' ? G.bld : G.rwy) * H;
+  if ((1 - L) > 0.2 && age < 0.6) { cx.fillStyle = `rgba(255,${120 + Math.random() * 60},40,${0.55 * fade})`; ell(bx, by, W * 0.012, H * 0.012); }
+  for (let i = 0; i < 10; i++) {
+    const ph = ((now / 1000) * 0.18 + i / 10) % 1, r = (0.008 + ph * 0.03) * W * (0.6 + fade * 0.4);
+    const g = Math.round(lerp(60, 120, ph) * (0.35 + 0.65 * L));
+    cx.fillStyle = `rgba(${g},${g},${g + 4},${(1 - ph) * 0.55 * fade})`;
+    ell(bx + Math.sin(i * 1.7 + ph * 3) * W * 0.01 + ph * W * 0.05 * (S.wx.kt / 10), by - ph * H * 0.32, r, r * 0.8);
+  }
+}
+function drawRaid(f, L, now) {
+  const t = (S.t - f.born) / 1.4;
+  for (let i = 0; i < 3; i++) {
+    const x = lerp(-0.1, 1.2, t - i * 0.07), y = 0.14 + i * 0.035;
+    if (x < -0.1 || x > 1.2) continue;
+    cx.save(); cx.translate(x * W, y * H); cx.scale(UL() * 0.45, UL() * 0.45);
+    cx.fillStyle = `rgba(28,30,34,.95)`; poly(SHAPES['F-16C'].body); cx.restore();
+  }
+  if (t > 0.35 && t < 1.2) {
+    const a = 1 - Math.abs(t - 0.6) * 1.6, fx = 0.5 * W, fy = G.rwy * H;
+    const g = cx.createRadialGradient(fx, fy, 0, fx, fy, W * 0.35);
+    g.addColorStop(0, `rgba(255,236,200,${clamp(a, 0, 1)})`); g.addColorStop(0.2, `rgba(255,140,50,${clamp(a * 0.6, 0, 1)})`); g.addColorStop(1, 'rgba(255,100,30,0)');
+    cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+  }
+}
+let FLASH = 0;
+function drawWeather(L, now, dtR) {
+  const kind = S.wx.kind;
+  if (kind === 'fog') {
+    const g = cx.createLinearGradient(0, 0, 0, H); const c = Math.round(lerp(40, 205, L));
+    g.addColorStop(0, `rgba(${c},${c},${c + 5},.25)`); g.addColorStop(0.45, `rgba(${c},${c},${c + 5},.6)`); g.addColorStop(1, `rgba(${c},${c},${c + 5},.2)`);
+    cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+  }
+  if (kind === 'rain' || kind === 'storm') {
+    const n = kind === 'storm' ? 160 : 90, slant = S.wx.kt * 0.4;
+    cx.strokeStyle = `rgba(190,202,218,${0.18 + 0.12 * L})`; cx.lineWidth = PX; cx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = (((i * 0.7311) % 1) * W + now * 0.02 * slant) % (W + 20) - 10, y = (((i * 0.618) + now * 0.0011 * (1 + (i % 3) * 0.25)) % 1) * H;
+      cx.moveTo(x, y); cx.lineTo(x - slant * 0.6, y + 11);
+    }
+    cx.stroke();
+    cx.fillStyle = `rgba(210,220,235,${0.12 + 0.08 * L})`;
+    for (let i = 0; i < 40; i++) ell(((i * 0.377) % 1) * W, ((i * 0.5813) % 1) * H, PX * 0.6, PX * 0.8);
+    if (kind === 'storm' && S.speed && Math.random() < dtR * 0.25) { FLASH = 1; sfxThunder(); }
+  }
+  if (FLASH > 0) { cx.fillStyle = `rgba(230,236,255,${FLASH * 0.45})`; cx.fillRect(0, 0, W, H); FLASH = Math.max(0, FLASH - dtR * 3); }
+  const night = 1 - L;
+  if (night > 0.3) {                  // the terminal's glow reflected in the glass
+    const g = cx.createLinearGradient(0, H * 0.7, 0, H);
+    g.addColorStop(0, 'rgba(240,180,76,0)'); g.addColorStop(1, `rgba(240,180,76,${0.07 * night})`);
+    cx.fillStyle = g; cx.fillRect(0, H * 0.7, W, H * 0.3);
+  }
+}
+function drawScene(now, dtR) {
+  if (!S || W < 10) return;
+  const L = daylight(), ov = overcast(), gold = L > 0 && L < 1 ? 1 - Math.abs(L - 0.5) * 2 : 0, Le = L * (1 - ov * 0.35);
+  drawSky(L, gold, ov, dtR);
+  drawFarSide(Le, ov, now);
+  for (const f of S.fx) if (f.kind === 'smoke' && f.at === 'farm') drawSmoke(f, Le, now);
+  drawAirfield(Le, now);
+  const actors = [];
+  for (const a of S.fleet) {
+    if (a.status === 'lost' || a.status === 'air' || a.status === 'ordered' || a.phase === 'inbound') continue;
+    const p = pose(a); if (p) actors.push([a, p]);
+  }
+  for (const c of S.cargo) { if (c.phase === 'inbound') continue; const p = pose(c); if (p) actors.push([c, p]); }
+  actors.sort((A, B) => A[1].y - B[1].y);
+  for (const [o, p] of actors) { drawPlane(o, p, Le, now); drawService(o, p, Le, now); }
+  for (const f of S.fx) { if (f.kind === 'smoke' && f.at === 'rwy') drawSmoke(f, Le, now); if (f.kind === 'raid') drawRaid(f, Le, now); if (f.kind === 'sam') drawSamFx(f, Le); }
+  drawWeather(Le, now, dtR);
+  quantize();
+}
+// ---------- Window view: hangars, air defence sites, missile launches ----------
+const PAT_SITES = [0.44, 0.56], SHO_SITES = [0.3, 0.68, 0.76], AD_Y = 0.645;
+function buildingNow(key) { return S.build && S.build.key === key ? clamp((S.t - S.build.start) / (S.build.done - S.build.start), 0, 1) : -1; }
+
+function drawHangars(k, night, now, base) {
+  const h = 0.06 * H, prog = buildingNow('hangar');
+  HANGAR_SITES.forEach((x, i) => {
+    const X = x * W, w = HANGAR_W * W, top = base - h;
+    if (i < S.base.hangar) {
+      cx.fillStyle = rgb(shade([118, 124, 120], k)); cx.fillRect(X, top, w, h);
+      cx.fillStyle = rgb(shade([138, 144, 140], k)); ell(X + w / 2, top, w / 2, h * 0.35);
+      const occ = S.fleet.filter(a => { const s = slotInfo(a.slot); return s.hangar && s.h === i; });
+      const open = occ.some(a => a.status !== 'ready' || a.task);
+      cx.fillStyle = rgb(shade(open ? [30, 32, 34] : [82, 88, 86], k)); cx.fillRect(X + w * 0.1, base - h * 0.75, w * 0.8, h * 0.75);
+      if (open && night > 0.3) { cx.fillStyle = `rgba(255,214,150,${0.25 + night * 0.3})`; cx.fillRect(X + w * 0.1, base - h * 0.75, w * 0.8, h * 0.75); }
+      if (!open) { cx.fillStyle = rgb(shade([64, 70, 68], k)); for (let d = 1; d < 6; d++) cx.fillRect(X + w * (0.1 + d * 0.8 / 6), base - h * 0.75, PX, h * 0.75); }
+      cx.fillStyle = `rgba(240,240,232,${0.35 + 0.4 * (1 - night)})`; cx.font = `${8 * PX}px "Silkscreen", monospace`; cx.textAlign = 'left';
+      cx.fillText(`H${i + 1}`, X + 3, top + h * 0.2);
+    } else if (i === S.base.hangar && prog >= 0) {
+      cx.fillStyle = rgb(shade([150, 150, 144], k)); cx.fillRect(X, base - 2, w, 3);
+      cx.strokeStyle = rgb(shade([186, 120, 64], k)); cx.lineWidth = PX; cx.beginPath();
+      const cols = Math.ceil(prog * 8);
+      for (let c = 0; c <= cols; c++) { cx.moveTo(X + w * c / 8, base); cx.lineTo(X + w * c / 8, top + h * 0.1); }
+      if (prog > 0.4) { cx.moveTo(X, top); cx.ellipse(X + w / 2, top, w / 2, h * 0.35, 0, Math.PI, Math.PI + Math.PI * clamp((prog - 0.4) / 0.6, 0, 1)); }
+      cx.stroke();
+      const mx = X + w * 1.06, mtop = base - 0.17 * H, swing = Math.sin(now / 1500) * w * 0.15;
+      cx.strokeStyle = rgb(shade([214, 168, 40], k)); cx.lineWidth = 1.5 * PX; cx.beginPath();
+      cx.moveTo(mx, base); cx.lineTo(mx, mtop); cx.moveTo(mx + w * 0.15, mtop); cx.lineTo(mx - w * 0.9, mtop); cx.stroke();
+      cx.lineWidth = PX; cx.beginPath(); cx.moveTo(mx - w * 0.5 + swing, mtop); cx.lineTo(mx - w * 0.5 + swing, top - h * 0.3); cx.stroke();
+      if ((now % 1200) < 500) { cx.fillStyle = 'rgba(255,60,50,.9)'; ell(mx, mtop - 2, PX, PX); }
+    } else {
+      cx.fillStyle = rgb(shade([132, 134, 126], k), 0.55); cx.fillRect(X, base - 1.5, w, 2.5);
+    }
+  });
+}
+
+function drawBaseExtras(L, k, now) {
+  const asph = rgb(shade([72, 74, 76], k));
+  if (S.base.hangar > 0) {
+    const y0 = (FT - 0.007) * H, th = 0.014 * H;
+    cx.fillStyle = asph;
+    cx.fillRect(0.04 * W, y0, 0.86 * W, th);
+    for (let i = 0; i < S.base.hangar; i++) cx.fillRect((HANGAR_SITES[i] + HANGAR_W * 0.12) * W, G.bld * H, HANGAR_W * 0.76 * W, y0 - G.bld * H + 1);
+    const ry0 = (G.rwy - G.rwyH / 2) * H;
+    poly([[0.88 * W, y0], [0.9 * W, y0], [0.97 * W, ry0 + 1], [0.93 * W, ry0 + 1]]);
+    poly([[0.12 * W, y0], [0.15 * W, y0], [0.19 * W, ry0 + 1], [0.14 * W, ry0 + 1]]);
+    cx.fillStyle = `rgba(232,190,60,${0.35 + 0.4 * L})`; cx.fillRect(0.04 * W, FT * H - PX / 2, 0.86 * W, PX);
+  }
+  const s = UL() * gsc(AD_Y), y = AD_Y * H;
+  const unit = (sx, kind, p) => {
+    const X = sx * W;
+    cx.globalAlpha = p < 0 ? 1 : 0.55;
+    cx.fillStyle = 'rgba(0,0,0,.25)'; ell(X, y + 1, s * 0.5, s * 0.05);
+    if (kind === 'pat') {
+      cx.fillStyle = rgb(shade([96, 104, 84], k)); cx.fillRect(X - s * 0.45, y - s * 0.16, s * 0.9, s * 0.12);
+      cx.fillStyle = rgb(shade([30, 30, 30], k)); for (const wx of [-0.32, -0.12, 0.25]) ell(X + wx * s, y - s * 0.03, s * 0.05, s * 0.05);
+      if (p < 0) {
+        cx.save(); cx.translate(X - s * 0.1, y - s * 0.17); cx.rotate(-0.62);
+        cx.fillStyle = rgb(shade([110, 118, 96], k)); cx.fillRect(-s * 0.1, -s * 0.24, s * 0.62, s * 0.24);
+        cx.fillStyle = rgb(shade([70, 76, 62], k)); for (let c = 0; c < 4; c++) cx.fillRect(s * 0.5, -s * 0.23 + c * s * 0.06, s * 0.02, s * 0.04);
+        cx.restore();
+      }
+    } else {
+      cx.fillStyle = rgb(shade([102, 108, 86], k)); cx.fillRect(X - s * 0.3, y - s * 0.16, s * 0.6, s * 0.13);
+      cx.fillRect(X - s * 0.12, y - s * 0.24, s * 0.26, s * 0.09);
+      cx.fillStyle = rgb(shade([30, 30, 30], k)); ell(X - s * 0.2, y - s * 0.03, s * 0.05, s * 0.05); ell(X + s * 0.2, y - s * 0.03, s * 0.05, s * 0.05);
+      if (p < 0) { cx.fillStyle = rgb(shade([84, 90, 72], k)); cx.fillRect(X - s * 0.24, y - s * 0.32, s * 0.1, s * 0.12); cx.fillRect(X + s * 0.14, y - s * 0.32, s * 0.1, s * 0.12); }
+    }
+    if (p >= 0) { cx.fillStyle = 'rgba(240,120,30,.95)'; for (const cxo of [-0.6, 0.6]) poly([[X + cxo * s - 2, y], [X + cxo * s + 2, y], [X + cxo * s, y - 6]]); }
+    cx.globalAlpha = 1;
+  };
+  const pb = buildingNow('patriot'), sb = buildingNow('shorad');
+  PAT_SITES.forEach((x, i) => { if (i < S.base.patriot) unit(x, 'pat', -1); else if (i === S.base.patriot && pb >= 0) unit(x, 'pat', pb); });
+  SHO_SITES.forEach((x, i) => { if (i < S.base.shorad) unit(x, 'sho', -1); else if (i === S.base.shorad && sb >= 0) unit(x, 'sho', sb); });
+}
+
+function drawSamFx(f, L) {
+  const t = clamp((S.t - f.born) / f.life, 0, 1), sx = (f.site === 'pat' ? PAT_SITES : SHO_SITES)[f.i] ?? 0.5;
+  const at = u => [(sx + f.dir * u * (f.site === 'pat' ? 0.28 : 0.18)) * W, (AD_Y - 0.02 - u * u * 0.62) * H];
+  cx.lineWidth = 1.5 * PX; cx.lineCap = 'round';
+  for (let j = 0; j < 14; j++) {
+    const u0 = t * j / 14, u1 = t * (j + 1) / 14, [x0, y0] = at(u0), [x1, y1] = at(u1);
+    const g = Math.round(lerp(150, 230, L));
+    cx.strokeStyle = `rgba(${g},${g},${g},${(0.15 + 0.5 * (j / 14)) * (1 - t * 0.6)})`;
+    cx.beginPath(); cx.moveTo(x0, y0); cx.lineTo(x1, y1); cx.stroke();
+  }
+  if (t < 0.98) { const [hx, hy] = at(t); cx.fillStyle = 'rgba(255,236,190,.95)'; ell(hx, hy, PX, PX); cx.fillStyle = 'rgba(255,150,60,.5)'; ell(hx, hy, 6, 6); }
+  if (t < 0.12) { const [x0, y0] = at(0); cx.fillStyle = `rgba(255,190,110,${0.7 * (1 - t / 0.12)})`; ell(x0, y0, 10, 6); }
+  cx.lineCap = 'butt';
+}
+// ---------- Pixel look: low-res window view, limited muted palette, ordered dithering ----------
+const PALETTE = [
+  '#0f0c0a', '#1e1915', '#2e2620', '#40352c', '#54473a', '#6b5c4a', '#85745d', '#a08e72', '#bba98a', '#d4c4a2', '#ece0c2',
+  '#141a20', '#1f2a33', '#2d3c47', '#3f525e', '#566b76', '#70878f', '#8da3a8', '#aebfc0', '#cdd8d6',
+  '#4a4a46', '#6e6e68', '#94948c', '#bcbcb2',
+  '#252c1c', '#343f26', '#465432', '#5c6b40', '#76844f', '#86b866',
+  '#4a1f19', '#7a2e1f', '#a3412a', '#c8653a', '#e09a52',
+  '#b8902e', '#e6c25a', '#f4e3a0', '#5f7fc0',
+];
+const PAL = PALETTE.map(h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v / 16 - 0.47) * 14);
+let LUT = null;
+function buildLUT() {
+  LUT = new Uint8Array(32768);
+  for (let r = 0; r < 32; r++) for (let g = 0; g < 32; g++) for (let b = 0; b < 32; b++) {
+    const R = r * 8 + 4, Gc = g * 8 + 4, B = b * 8 + 4;
+    let best = 0, bd = 1e12;
+    for (let i = 0; i < PAL.length; i++) {
+      const p = PAL[i], dr = R - p[0], dg = Gc - p[1], db = B - p[2], d = 2 * dr * dr + 4 * dg * dg + 3 * db * db;
+      if (d < bd) { bd = d; best = i; }
+    }
+    LUT[(r << 10) | (g << 5) | b] = best;
+  }
+}
+function quantize() {
+  if (!LUT) buildLUT();
+  const w = cv.width, h = cv.height; if (!w || !h) return;
+  const img = cx.getImageData(0, 0, w, h), d = img.data;
+  for (let y = 0; y < h; y++) {
+    const row = (y & 3) * 4;
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4, t = BAYER[row + (x & 3)];
+      let r = d[i] + t, g = d[i + 1] + t, b = d[i + 2] + t;
+      r = r < 0 ? 0 : r > 255 ? 31 : r >> 3; g = g < 0 ? 0 : g > 255 ? 31 : g >> 3; b = b < 0 ? 0 : b > 255 ? 31 : b >> 3;
+      const p = PAL[LUT[(r << 10) | (g << 5) | b]];
+      d[i] = p[0]; d[i + 1] = p[1]; d[i + 2] = p[2]; d[i + 3] = 255;
+    }
+  }
+  cx.putImageData(img, 0, 0);
+}
+// ---------- Terminal panels ----------
+const UI = { tab: 'missions', selM: null, pick: new Set(), tac: { ...DEFAULT_TAC }, selF: null, lastTab: null, lastHTML: '', lastSide: '', down: false, resume: false };
+const TYPE_NAME = { CAP: 'Combat air patrol', STRIKE: 'Strike', RECON: 'Reconnaissance', INTERCEPT: 'Intercept', TANKER: 'Tanker track', AWACS: 'AWACS orbit' };
+const FSTATE = { launch: 'Taking off', enroute: 'En route', station: 'On station', engaged: 'Engaged', rtb: 'Returning to base', tanking: 'Going to tanker' };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function gauge(frac, cls = '', pend = 0) {
+  const w = clamp(frac * 100, 0, 100);
+  return `<div class="gauge ${cls}"><i style="width:${w.toFixed(1)}%"></i>${pend > 0 ? `<u style="left:${w.toFixed(1)}%;width:${clamp(pend * 100, 0, 100 - w).toFixed(1)}%"></u>` : ''}</div>`;
+}
+const lvl = f => f < 0.15 ? 'crit' : f < 0.35 ? 'low' : '';
+const pips = n => `<span class="pips" title="Threat ${n} of 5">${'▮'.repeat(n)}<s>${'▮'.repeat(5 - n)}</s></span>`;
+const seg = (act, cur, opts, extra = '') => `<div class="seg">${opts.map(([v, l]) => `<button class="btn${v === cur ? ' on' : ''}" data-act="${act}" data-v="${v}" ${extra}>${l}</button>`).join('')}</div>`;
+
+function acState(a) {
+  if (a.status === 'ordered') return ['idle', 'On order'];
+  if (a.status === 'lost') return ['crit', a.replacing ? 'Replacement due' : 'Lost'];
+  if (a.status === 'dep') return ['air', { taxi: 'Taxiing', hold: 'Holding short', roll: 'Takeoff roll', climb: 'Climbing out' }[a.phase] || 'Departing'];
+  if (a.status === 'air') { const f = FL(a.flight); return ['air', f ? FSTATE[f.state] : 'Airborne']; }
+  if (a.status === 'arr') return ['air', { inbound: 'In the pattern', final: 'On final', rollout: 'Landing', taxiin: 'Taxiing in' }[a.phase] || 'Inbound'];
+  if (a.task) return ['warn', { refuel: 'Refuelling', arm: 'Arming', repair: 'In repair' }[a.task.kind]];
+  if (a.queue.length) return ['warn', 'Waiting for crew'];
+  const r = readiness(a); if (r) return [a.cond < 50 ? 'crit' : 'warn', r.split(',')[0]];
+  if (!isSupportType(a.type) && !['aim120', 'aim9', 'agm65', 'gbu12'].some(k => a.load[k] > 0)) return ['warn', 'Unarmed'];
+  return ['ok', 'Ready'];
+}
+function loadLine(a) {
+  if (TYPES[a.type].tanker) return `<span>Boom offload <b>40 kL</b></span><span>Crew <b>3</b></span>`;
+  if (TYPES[a.type].awacs) return `<span>Radar orbit <b>55 km out</b></span><span>Boosts every flight</span>`;
+  const p = [];
+  for (const k of ['aim120', 'aim9', 'agm65', 'gbu12']) if (a.load[k]) p.push(`<span>${WLBL[k]} <b>${a.load[k]}</b></span>`);
+  if (!p.length) p.push('<span>No missiles or bombs</span>');
+  p.push(`<span>20mm <b>${a.load.gun}</b></span>`, `<span>Chaff/flare <b>${a.load.chaff}/${a.load.flare}</b></span>`);
+  return p.join('');
+}
+
+function supplyHTML() {
+  const rows = RES_KEYS.filter(k => capOf(k) > 0).map(k => {
+    const R = RES_DEF[k], cap = capOf(k), q = S.res[k], f = q / cap, pend = pending(k), blk = orderBlock(k);
+    return `<div class="res"><div class="nm"><b>${R.name}</b><small>${R.note}</small></div>
+      ${gauge(f, lvl(f), pend / cap)}
+      <div class="qty">${fmtQ(k, q).replace(/ \w+$/, '')}<small> / ${fmtQ(k, cap)}</small></div>
+      <button class="btn" data-act="order" data-k="${k}" ${blk ? 'disabled' : ''} title="${blk || ''}">+${fmtQ(k, R.pack)} · ${money(R.cost)} · ${fmtDur(R.eta)}</button></div>`;
+  }).join('');
+  const inbound = [
+    ...S.cargo.filter(c => c.items.length).map(c => [c.call + ' · ' + ({ inbound: 'in the pattern', final: 'on final', rollout: 'landing', taxiin: 'taxiing in', unload: 'unloading' }[c.phase] || 'on the ramp'), c.items]),
+    ...S.deliveries.slice().sort((a, b) => a.at - b.at).map(d => [`Airlift ETA ${fmtClock(d.at)} (${fmtDur(d.at - S.t)})`, d.items]),
+  ];
+  const closed = S.t < S.runway.closedUntil;
+  return `<div class="secH"><h2>Stores and fuel</h2><p>Hatched bar: on order. Deliveries land on runway 27 by C-130.</p></div>${rows}
+  <div class="cols2">
+    <div><p class="h">Inbound deliveries</p><div class="list" style="margin-top:8px">${inbound.length ? inbound.map(([t, it]) => `<div><span>${esc(t)}</span><span class="muted">${it.map(([k, q]) => fmtQ(k, q) + ' ' + RES_DEF[k].short).join(', ')}</span></div>`).join('') : '<div><span class="muted">Nothing on order.</span></div>'}</div></div>
+    <div><p class="h">Base status</p><dl class="kv" style="margin-top:8px">
+      <dt>Runway 27</dt><dd class="${closed ? 'critc' : 'okc'}">${closed ? `Closed, crater repair ${fmtDur(S.runway.closedUntil - S.t)}` : 'Open'}</dd>
+      <dt>Ground crews</dt><dd>${crewsBusy()} of ${S.crews} working</dd>
+      <dt>Air defence</dt><dd>${S.base.patriot || S.base.shorad ? `${S.base.patriot} Patriot, ${S.base.shorad} Avenger` : 'None. Build it on the Base tab.'}</dd>
+      <dt>Weather</dt><dd>${WX_NAME[S.wx.kind]}, ${S.wx.wind}° / ${S.wx.kt} kt</dd>
+      <dt>Next budget</dt><dd>06:00, about ${money((700 + S.rep * 6) * budgetMul())}</dd>
+      <dt>Record</dt><dd>${S.stats.won} won · ${S.stats.failed} failed · ${S.stats.kills} kills · ${S.stats.lost} jets lost</dd>
+    </dl></div>
+  </div>`;
+}
+
+function flightlineHTML() {
+  const cards = S.fleet.map(a => {
+    const [cls, label] = acState(a), T = TYPES[a.type], parked = a.status === 'ready';
+    let task = '';
+    if (a.task) task = `${label}, ${fmtDur(a.task.dur - a.task.t)} left`;
+    if (a.queue.length) task += `${task ? ' · then ' : 'Queued: '}${a.queue.map(q => q.kind === 'arm' ? 'arm ' + LO_NAME[q.arg] : q.kind).join(', ')}`;
+    let acts = '';
+    if (a.status === 'ordered') acts = `<span class="muted">Ferry flight arrives ${fmtClock(a.replacing)}</span>`;
+    else if (a.status === 'lost') acts = a.replacing ? `<span class="muted">Ferry flight arrives ${fmtClock(a.replacing)}</span>` : `<button class="btn" data-act="replace" data-id="${a.id}" ${S.funds < replaceCost(a) ? 'disabled' : ''}>Request replacement · ${money(replaceCost(a))}</button>`;
+    else if (parked) {
+      acts = `<button class="btn go" data-act="turn" data-id="${a.id}">Turnaround</button>
+        <button class="btn" data-act="refuel" data-id="${a.id}" ${a.fuel >= 99.5 || S.res.fuel < 0.1 ? 'disabled' : ''}>Refuel</button>
+        <button class="btn" data-act="repair" data-id="${a.id}" ${a.cond >= 99.5 || S.res.parts < 1 ? 'disabled' : ''}>Repair</button>`;
+      if (T.tanker || T.awacs) acts += `<button class="btn cy" data-act="tanker" data-id="${a.id}" ${readiness(a) ? 'disabled' : ''}>${T.awacs ? 'Launch AWACS orbit' : 'Launch to tanker track'}</button>`;
+      else acts += seg('arm', a.loadout, Object.keys(T.loadouts).map(k => [k, k]), `data-id="${a.id}"`);
+      if (S.pilots.some(p => p.fatigue < a.fatigue - 10)) acts += `<button class="btn" data-act="swap" data-id="${a.id}">Swap pilot</button>`;
+    } else if (a.flight) acts = `<button class="btn cy" data-act="maps" data-f="${a.flight}">Show on tac map</button>`;
+    return `<article class="ac${a.status === 'lost' ? ' lost' : ''}">
+      <header><span class="call">${a.call}</span><span class="chip ${cls}">${label}</span></header>
+      <div class="sub">${a.type} · ${a.tail} · ${a.pilot}${a.loadout ? ' · ' + LO_NAME[a.loadout] : ''}</div>
+      <div class="bars"><span>Fuel</span>${gauge(a.fuel / 100, lvl(a.fuel / 100))}<em>${Math.round(a.fuel)}%</em>
+        <span>Airframe</span>${gauge(a.cond / 100, a.cond < 50 ? 'crit' : a.cond < 80 ? 'low' : '')}<em>${Math.round(a.cond)}%</em>
+        <span>Fatigue</span>${gauge(a.fatigue / 100, a.fatigue > 80 ? 'crit' : a.fatigue > 55 ? 'low' : '')}<em>${Math.round(a.fatigue)}%</em></div>
+      <div class="load">${loadLine(a)}</div>
+      <div class="task">${task}</div>
+      <div class="acts">${acts}</div></article>`;
+  }).join('');
+  return `<div class="secH"><h2>Flightline</h2><p>${crewsBusy()} of ${S.crews} ground crews working · ${S.fleet.length} of ${slotCount()} parking spaces · Turnaround queues repair, fuel and stores · A2A, CAP and STRIKE set the weapons load</p></div><div class="grid">${cards}</div>`;
+}
+
+function etaText(m) {
+  if (m.type === 'INTERCEPT') { const r = raidOf(m); return r ? `Raid reaches base in ${fmtDur((hyp(r.x, r.y) - 14) / r.speed)}` : ''; }
+  return m.expires ? `Expires in ${fmtDur(m.expires - S.t)}` : '';
+}
+function mPos(m) { const r = m.type === 'INTERCEPT' && raidOf(m); return r ? r : m; }
+function missionsHTML() {
+  const live = S.missions.filter(m => m.status === 'open' || m.status === 'active')
+    .sort((a, b) => (b.type === 'INTERCEPT') - (a.type === 'INTERCEPT') || (a.status === 'active') - (b.status === 'active') || (a.expires || 0) - (b.expires || 0));
+  if (UI.selM && !live.some(m => m.id === UI.selM)) UI.selM = null;
+  if (!UI.selM && live.length) UI.selM = live[0].id;
+  const recent = S.missions.filter(m => !(m.status === 'open' || m.status === 'active')).slice(-4).reverse();
+  const items = live.map(m => {
+    const p = mPos(m), f = FL(m.flight);
+    return `<button class="mi${m.id === UI.selM ? ' sel' : ''}${m.type === 'INTERCEPT' ? ' int' : ''}" data-act="selm" data-id="${m.id}">
+      <span class="t">Op. ${m.op}</span><span class="ty">${TYPE_NAME[m.type]}</span>
+      <small>Sector ${sectorName(p.x, p.y)} · ${Math.round(hyp(p.x, p.y))} km · ${pips(m.threat)}</small>
+      <small class="${f ? 'cyc' : m.type === 'INTERCEPT' ? 'critc' : ''}">${f ? f.call + ': ' + FSTATE[f.state].toLowerCase() : etaText(m)}</small></button>`;
+  }).join('');
+  const left = `<div class="mlist">${items || '<div class="empty">No tasking right now. New orders arrive every 30 to 60 minutes. Use the time to turn jets around and stock up.</div>'}
+    ${recent.length ? `<p class="h" style="margin-top:8px">Recent</p>${recent.map(m => `<small class="${m.status === 'done' ? 'okc' : m.status === 'failed' ? 'critc' : 'warnc'}">Op. ${m.op}: ${m.status === 'done' ? 'complete' : m.status}</small>`).join('')}` : ''}</div>`;
+  const m = MS(UI.selM);
+  return `<div class="secH"><h2>Tasking</h2><p>Pick an operation, assign aircraft, set tactics, launch.</p></div><div class="msplit">${left}${m ? planHTML(m) : ''}</div>`;
+}
+function planHTML(m) {
+  const p = mPos(m), d = hyp(p.x, p.y);
+  const head = `<div><p class="h">${TYPE_NAME[m.type]} · Sector ${sectorName(p.x, p.y)} · ${Math.round(d)} km</p><h3>Op. ${m.op}</h3></div><p>${m.brief}</p>
+    <div class="est"><span>Reward <b>${money(m.reward)}</b></span><span>Rating <b>+${m.rep}</b></span><span>Threat ${pips(m.threat)}</span><span>Suggested load <b>${LO_NAME[m.need]}</b></span>${m.type === 'STRIKE' && m.hp < m.hp0 ? `<span>Target damage <b>${Math.round((1 - m.hp / m.hp0) * 100)}%</b></span>` : ''}</div>`;
+  if (m.status === 'active') {
+    const f = FL(m.flight);
+    return `<div class="plan">${head}${f ? `<p class="cyc">${f.call}: ${FSTATE[f.state].toLowerCase()}.</p>
+      <div class="acts"><button class="btn cy" data-act="maps" data-f="${f.id}">Open tac map</button><button class="btn red" data-act="rtb" data-f="${f.id}">Recall flight</button></div>` : ''}</div>`;
+  }
+  for (const id of [...UI.pick]) if (readiness(AC(id))) UI.pick.delete(id);
+  const picks = S.fleet.filter(a => !isSupportType(a.type) && a.status !== 'ordered').map(a => {
+    const r = readiness(a);
+    return `<button class="pk${UI.pick.has(a.id) ? ' on' : ''}" data-act="pick" data-id="${a.id}" ${r ? 'disabled' : ''}><span>${a.call}</span><small>${r || `${a.loadout || 'Unarmed'} · fuel ${Math.round(a.fuel)}%`}</small></button>`;
+  }).join('');
+  const tact = Object.entries(TAC_OPTS).map(([k, o]) => `<div><p class="h">${o.label}</p>${seg('tac', UI.tac[k], o.opts, `data-k="${k}"`)}<small>${TAC_HELP[k][UI.tac[k]]}</small></div>`).join('');
+  const chosen = [...UI.pick].map(AC);
+  const spd = chosen.length ? Math.min(...chosen.map(a => TYPES[a.type].speed)) : 15;
+  const station = m.type === 'CAP' ? m.dur : m.type === 'RECON' ? m.dur : m.type === 'STRIKE' ? 8 : 6;
+  const fuelNeed = chosen.length ? Math.max(...chosen.map(a => TYPES[a.type].burn * ALT_BURN[UI.tac.alt] * (d * 2 / spd + station * 1.4))) : 0;
+  let warn = '';
+  if (chosen.length) {
+    if (m.type === 'STRIKE' && !chosen.some(hasA2G)) warn = 'No bombs or Mavericks loaded. This strike cannot succeed.';
+    else if (m.type !== 'STRIKE' && !chosen.some(a => a.load.aim120 > 0 || a.load.aim9 > 0)) warn = 'No air-to-air missiles loaded.';
+    else if (chosen.some(a => a.fuel < fuelNeed + 7)) warn = 'Fuel is tight. Expect an early RTB or plan a tanker.';
+  }
+  return `<div class="plan">${head}
+    <div><p class="h">Assign aircraft (up to 4)</p><div class="pick" style="margin-top:6px">${picks}</div></div>
+    <div class="tact">${tact}</div>
+    <div class="est"><span>Transit <b>${fmtDur(d / spd)}</b> each way</span><span>Fuel needed <b>~${Math.round(fuelNeed)}%</b></span>${m.type === 'INTERCEPT' ? `<span class="critc">${etaText(m)}</span>` : `<span>${etaText(m)}</span>`}</div>
+    <div class="acts"><button class="btn go big" data-act="launch" ${chosen.length ? '' : 'disabled'}>${chosen.length ? `Launch ${chosen.length} aircraft` : 'Select aircraft to launch'}</button><span class="warnc">${warn}</span></div></div>`;
+}
+
+function tacSideHTML() {
+  const fl = S.flights;
+  if (UI.selF && !FL(UI.selF)) UI.selF = null;
+  if (!UI.selF && fl.length) UI.selF = fl[0].id;
+  const list = fl.map(f => `<button class="fl${f.id === UI.selF ? ' on' : ''}" data-act="self" data-id="${f.id}"><span>${f.call}</span><span class="muted">${FSTATE[f.state]}</span></button>`).join('');
+  const f = FL(UI.selF);
+  let det = '';
+  if (f) {
+    const m = MS(f.mission), ms = f.members.map(AC).filter(Boolean), t = tankerOnStation();
+    det = `<div><p class="h">${isSupport(f) ? TYPE_NAME[f.kind] : m ? 'Op. ' + m.op + ' · ' + TYPE_NAME[m.type] : 'No tasking'}</p>
+      <p style="margin:4px 0 0">${FSTATE[f.state]}${f.state !== 'launch' ? ` · ${bearingName(f.x, f.y)} ${Math.round(hyp(f.x, f.y))} km from base` : ''}${f.enemy ? ` · <span class="critc">${f.enemy.n} bandits</span>` : ''}${f.kind === 'TANKER' ? ` · offload ${Math.round(f.offload)} kL` : ''}</p></div>
+      <div class="mem">${ms.map(a => `<span>${a.call}</span><span class="${a.fuel < 25 ? 'critc' : ''}">F ${Math.round(a.fuel)}%</span><span class="${a.cond < 50 ? 'critc' : ''}">A ${Math.round(a.cond)}%</span>
+        <span class="muted" style="grid-column:1/-1">${isSupportType(a.type) ? a.type : `${a.load.aim120}× AIM-120 · ${a.load.aim9}× AIM-9X${a.load.gbu12 || a.load.agm65 ? ` · ${a.load.gbu12}× GBU-12 · ${a.load.agm65}× AGM-65` : ''} · CM ${a.load.chaff}/${a.load.flare}`}</span>`).join('')}</div>
+      ${!isSupport(f) ? Object.entries(TAC_OPTS).map(([k, o]) => `<div><p class="h">${o.label}</p>${seg('ftac', f.tac[k], o.opts, `data-k="${k}" data-f="${f.id}"`)}</div>`).join('') : ''}
+      <div class="acts">${f.state !== 'rtb' && f.state !== 'launch' ? `<button class="btn red" data-act="rtb" data-f="${f.id}">Order RTB</button>` : ''}
+        ${!isSupport(f) && t && !['rtb', 'launch', 'tanking'].includes(f.state) ? `<button class="btn cy" data-act="tank" data-f="${f.id}">Refuel at ${t.call}</button>` : ''}</div>`;
+  }
+  return `<p class="h">Airborne flights</p>${list || '<div class="empty">Nothing airborne. Launch a flight from Tasking, or put the tanker up.</div>'}${det}
+    <p class="muted" style="font-size:11px;line-height:1.5;margin:6px 0 0">Click a flight to select it. Click an operation marker to plan it. Range rings every 100 km.</p>`;
+}
+function logHTML() {
+  return `<div class="secH"><h2>Comms and events</h2><p>Newest first.</p></div><div class="log">${S.log.slice(-140).reverse().map(l => `<div><time>${fmtT(l.t)}</time><span class="${l.cls}">${esc(l.msg)}</span></div>`).join('')}</div>`;
+}
+
+// ---------- Base tab: construction, personnel, procurement ----------
+const lvlPips = (n, max) => `<span class="lvl" title="${n} of ${max} built">${'▮'.repeat(n)}<s>${'▮'.repeat(max - n)}</s></span>`;
+const progBar = p => `<div class="prog"><i style="width:${(clamp(p, 0, 1) * 100).toFixed(1)}%"></i></div>`;
+const cardHead = (title, side, size = 20) => `<header><span class="call" style="font-size:${size}px">${title}</span>${side}</header>`;
+function baseHTML() {
+  const bld = S.build, tr = S.training;
+  const bStatus = bld
+    ? `<p>Building ${UPGRADES[bld.key].name} ${S.base[bld.key] + 1}. Ready ${fmtClock(bld.done)}, in ${fmtDur(bld.done - S.t)}.</p>${progBar((S.t - bld.start) / (bld.done - bld.start))}`
+    : '<p class="muted">Engineers are free. Pick a project.</p>';
+  const ups = Object.entries(UPGRADES).map(([k, U]) => {
+    const blk = buildBlock(k), n = S.base[k];
+    const btn = n >= U.max ? '<span class="muted">Fully built</span>' : `<button class="btn go" data-act="build" data-k="${k}" ${blk ? 'disabled' : ''}>Build · ${money(U.cost)} · ${fmtDur(U.time)}</button>`;
+    return `<article class="ac">${cardHead(U.name, lvlPips(n, U.max))}<div class="sub">${U.note}</div><div class="acts">${btn}${blk && blk !== 'Engineers busy' ? `<span class="warnc">${blk === 'No budget' ? 'Not enough budget' : blk}</span>` : ''}</div></article>`;
+  }).join('');
+  const tStatus = tr
+    ? `<p>Training ${tr.kind === 'crew' ? 'a ground crew' : 'a pilot'}. Qualified ${fmtClock(tr.done)}, in ${fmtDur(tr.done - S.t)}.</p>${progBar((S.t - tr.start) / (tr.done - tr.start))}`
+    : '<p class="muted">Instructors are free.</p>';
+  const cb = trainBlock('crew'), pb = trainBlock('pilot');
+  const spare = S.pilots.length
+    ? S.pilots.map(p => `<div><span>${esc(p.name)}</span><span class="${p.fatigue > 55 ? 'warnc' : 'okc'}">fatigue ${Math.round(p.fatigue)}%</span></div>`).join('')
+    : '<div><span class="muted">No spare pilots yet. Tired pilots keep flying.</span></div>';
+  const people = `<div class="grid">
+    <article class="ac">${cardHead('Ground crews', `<span class="chip ok">${S.crews} of ${CREW_MAX}</span>`)}<div class="sub">Each crew refuels, arms or repairs one jet at a time. ${crewsBusy()} working now.</div>
+      <div class="acts"><button class="btn go" data-act="train" data-k="crew" ${cb ? 'disabled' : ''}>Train crew · ${money(CREW_COST)} · ${fmtDur(CREW_TIME)}</button>${cb && cb.startsWith('Unlocks') ? `<span class="warnc">${cb}</span>` : ''}</div></article>
+    <article class="ac">${cardHead('Spare pilots', `<span class="chip ok">${S.pilots.length} of ${PILOT_MAX}</span>`)}<div class="sub">Swap a rested pilot into a tired jet from the Flightline.</div><div class="list">${spare}</div>
+      <div class="acts"><button class="btn go" data-act="train" data-k="pilot" ${pb ? 'disabled' : ''}>Train pilot · ${money(PILOT_COST)} · ${fmtDur(PILOT_TIME)}</button>${pb && pb.startsWith('Unlocks') ? `<span class="warnc">${pb}</span>` : ''}</div></article></div>`;
+  const shop = SHOP.map(t => {
+    const T = TYPES[t], blk = buyBlock(t), owned = S.fleet.filter(a => a.type === t && a.status !== 'lost').length;
+    const loads = Object.keys(T.loadouts).join(' · ') || (T.tanker ? 'Fuel offload' : 'Radar orbit');
+    return `<article class="ac">${cardHead(t, `<span class="chip idle">${owned} in service</span>`, 22)}<div class="sub">${T.role}</div>
+      <div class="stats3"><span>Speed<b>${Math.round(T.speed * 60)} km/h</b></span><span>Fuel<b>${T.fuelKL} kL</b></span><span>Loads<b>${loads}</b></span></div>
+      <div class="acts"><button class="btn go" data-act="buy" data-k="${t}" ${blk ? 'disabled' : ''}>Buy · ${money(T.price)}</button>${blk ? `<span class="warnc">${blk}</span>` : ''}</div></article>`;
+  }).join('');
+  return `<div class="secH"><h2>Construction</h2><p>One engineer team works on one project at a time.</p></div>${bStatus}<div class="grid" style="margin-top:10px">${ups}</div>
+    <div class="secH" style="margin-top:22px"><h2>Personnel</h2><p>One training class at a time.</p></div>${tStatus}<div style="margin-top:10px">${people}</div>
+    <div class="secH" style="margin-top:22px"><h2>Procurement</h2><p>Parking ${S.fleet.length} of ${slotCount()} used. Hangars add space. New jets arrive by ferry flight after ${fmtDur(REPLACE_ETA)}.</p></div><div class="grid">${shop}</div>`;
+}
+// ---------- Sound: synthesized with Web Audio, heard through the office window ----------
+const SND = { ctx: null, on: true, L: null, radioBusy: 0 };
+try { SND.on = localStorage.getItem('kfo-sound') !== 'off'; } catch (e) { /* default on */ }
+
+function audioInit() {
+  if (!SND.on) return;
+  if (SND.ctx) { if (SND.ctx.state === 'suspended') SND.ctx.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  try {
+    const c = new AC(); SND.ctx = c;
+    const master = c.createGain(); master.gain.value = 0.85; master.connect(c.destination); SND.master = master;
+    const mkBuf = brown => {
+      const b = c.createBuffer(1, c.sampleRate * 2, c.sampleRate), d = b.getChannelData(0); let last = 0;
+      for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; if (brown) { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w; }
+      return b;
+    };
+    SND.white = mkBuf(false); SND.brown = mkBuf(true);
+    const loop = b => { const s = c.createBufferSource(); s.buffer = b; s.loop = true; s.start(); return s; };
+    const gain = v => { const g = c.createGain(); g.gain.value = v; return g; };
+    const filt = (type, f, q = 0.7) => { const x = c.createBiquadFilter(); x.type = type; x.frequency.value = f; x.Q.value = q; return x; };
+    const pan = c.createStereoPanner ? c.createStereoPanner() : null; if (pan) pan.connect(master);
+    const out = pan || master;
+    // jet roar: rumble plus hiss, muffled by the glass
+    const roarG = gain(0), roarF = filt('lowpass', 700);
+    loop(SND.brown).connect(roarF); const hiss = gain(0.22); loop(SND.white).connect(hiss); hiss.connect(roarF);
+    roarF.connect(roarG); roarG.connect(out);
+    // turbine whine while taxiing
+    const whG = gain(0), o1 = c.createOscillator(), o2 = c.createOscillator();
+    o1.type = 'sine'; o1.frequency.value = 960; o2.type = 'triangle'; o2.frequency.value = 1420;
+    o1.connect(whG); o2.connect(whG); whG.connect(out); o1.start(); o2.start();
+    // C-130 propellers: buzzy saws with a slow beat
+    const prG = gain(0), prF = filt('lowpass', 420), p1 = c.createOscillator(), p2 = c.createOscillator();
+    p1.type = 'sawtooth'; p1.frequency.value = 74; p2.type = 'sawtooth'; p2.frequency.value = 75.6;
+    p1.connect(prF); p2.connect(prF); prF.connect(prG); prG.connect(out); p1.start(); p2.start();
+    // rain on the glass, and the room itself
+    const rnG = gain(0), rnF = filt('highpass', 1100); loop(SND.white).connect(rnF); rnF.connect(rnG); rnG.connect(master);
+    const roomG = gain(0.04), roomF = filt('lowpass', 150); loop(SND.brown).connect(roomF); roomF.connect(roomG); roomG.connect(master);
+    SND.L = { roarG, roarF, whG, o1, prG, rnG, roomG, pan };
+    document.addEventListener('visibilitychange', () => { if (!SND.ctx) return; if (document.hidden) SND.ctx.suspend(); else if (SND.on) SND.ctx.resume(); });
+  } catch (e) { SND.ctx = null; }
+}
+function setSound(on) {
+  SND.on = on;
+  try { localStorage.setItem('kfo-sound', on ? 'on' : 'off'); } catch (e) { /* ignore */ }
+  if (on) audioInit();
+  if (SND.ctx) SND.master.gain.setTargetAtTime(on ? 0.85 : 0, SND.ctx.currentTime, 0.05);
+}
+const ready = () => SND.ctx && SND.on && SND.ctx.state === 'running';
+function setG(g, v, tc = 0.25) { g.gain.setTargetAtTime(v, SND.ctx.currentTime, tc); }
+
+// Continuous layers follow what is happening on the runway
+function audioFrame() {
+  if (!SND.ctx || !SND.L || !S) return;
+  const L = SND.L, live = SND.on && S.started && !S.over && S.speed > 0 ? 1 : 0;
+  let roar = 0, idle = 0, prop = 0, px = 0.5;
+  const consider = o => {
+    const ph = o.phase; if (!ph || ph === 'inbound' || ph === 'unload' || (ph === 'taxi' && o.phT <= 0)) return;
+    let r = 0, i = 0;
+    if (ph === 'roll') { const t = o.phT / DEP.roll; r = t < 0.2 ? 0.3 : 0.5 + 0.5 * t; }
+    else if (ph === 'climb') r = 1 - (o.phT / DEP.climb) * 0.85;
+    else if (ph === 'final') r = 0.15 + 0.3 * (o.phT / ARR.final);
+    else if (ph === 'rollout') r = 0.65 * (1 - o.phT / ARR.rollout) + 0.1;
+    else i = 0.4;
+    if (o.type === 'C-130H') prop = Math.max(prop, r || i);
+    else {
+      if (r > roar) { roar = r; const p = pose(o); px = p ? p.x : 0.5; }
+      idle = Math.min(1, idle + i * 0.6);
+    }
+  };
+  S.fleet.forEach(consider); S.cargo.forEach(consider);
+  setG(L.roarG, roar * 0.6 * live, 0.15);
+  L.roarF.frequency.setTargetAtTime(420 + roar * 1100, SND.ctx.currentTime, 0.2);
+  if (L.pan) L.pan.pan.setTargetAtTime(clamp(px * 2 - 1, -1, 1) * 0.8, SND.ctx.currentTime, 0.2);
+  setG(L.whG, (idle * 0.02 + roar * 0.012) * live, 0.3);
+  L.o1.frequency.setTargetAtTime(900 + roar * 500 + idle * 80, SND.ctx.currentTime, 0.4);
+  setG(L.prG, prop * 0.09 * live, 0.3);
+  setG(L.rnG, ({ rain: 0.05, storm: 0.09 }[S.wx.kind] || 0) * (S.started ? 1 : 0), 1);
+  setG(L.roomG, 0.04, 1);
+}
+
+// One-shot effects
+function shot(dur, type, freq, q, peak, at = 0, buf = SND.white) {
+  const c = SND.ctx, t = c.currentTime + at, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+  s.buffer = buf; f.type = type; f.frequency.value = freq; f.Q.value = q;
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(SND.master); s.start(t, Math.random()); s.stop(t + dur + 0.05);
+  return f;
+}
+function tone(type, freq, dur, peak, at = 0, dest = SND.master) {
+  const c = SND.ctx, t = c.currentTime + at, o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur + 0.05);
+  return o;
+}
+function sfxClick() { if (ready()) tone('sine', 1750, 0.035, 0.02); }
+function sfxRadio(msg) {
+  if (!ready()) return;
+  const c = SND.ctx, now = c.currentTime; if (now < SND.radioBusy) return;
+  const syl = clamp(Math.round(msg.length / 9), 3, 11), dur = syl * 0.085;
+  shot(0.07, 'bandpass', 2300, 1.4, 0.05);
+  const band = c.createBiquadFilter(); band.type = 'bandpass'; band.frequency.value = 1350; band.Q.value = 1.3;
+  const bg = c.createGain(); bg.gain.value = 0.6; band.connect(bg); bg.connect(SND.master);
+  const base = rnd(150, 230);
+  for (let i = 0; i < syl; i++) {
+    const o = tone('square', base * rnd(0.85, 1.35), 0.075, 0.035, 0.07 + i * 0.085, band);
+    o.frequency.linearRampToValueAtTime(base * rnd(0.8, 1.2), c.currentTime + 0.07 + i * 0.085 + 0.07);
+  }
+  shot(dur + 0.08, 'bandpass', 1800, 0.8, 0.012, 0.06);
+  shot(0.05, 'highpass', 3000, 0.7, 0.04, 0.08 + dur);
+  SND.radioBusy = now + 0.1 + dur + 0.25;
+}
+function sfxAlarm() {
+  if (!ready()) return;
+  const lp = SND.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1700; lp.connect(SND.master);
+  for (let i = 0; i < 8; i++) tone('sawtooth', i % 2 ? 620 : 830, 0.34, 0.045, i * 0.36, lp);
+}
+function sfxBoom(delay = 0, size = 1) {
+  if (!ready()) return;
+  shot(3.2 * size, 'lowpass', 160, 0.7, 0.9 * size, delay, SND.brown);
+  shot(0.7, 'lowpass', 900, 0.7, 0.35 * size, delay);
+  const o = tone('sine', 58, 1.4 * size, 0.4 * size, delay); o.frequency.exponentialRampToValueAtTime(28, SND.ctx.currentTime + delay + 1.2);
+}
+function sfxThunder() { if (ready()) sfxBoom(rnd(0.3, 1.4), 0.7); }
+function sfxLaunch() {
+  if (!ready()) return;
+  const f = shot(1.6, 'bandpass', 380, 1.2, 0.16);
+  f.frequency.exponentialRampToValueAtTime(1500, SND.ctx.currentTime + 1.2);
+  shot(0.4, 'lowpass', 300, 0.7, 0.3, 0, SND.brown);
+}
+function sfxChime() { if (ready()) { tone('triangle', 880, 0.25, 0.03); tone('triangle', 1320, 0.35, 0.03, 0.12); } }
+function onLogHook(cls, msg) {
+  if (!ready()) return;
+  if (cls === 'radio') { if (/^(Patriot|Avenger):/.test(msg)) sfxLaunch(); sfxRadio(msg); }
+  else if (cls === 'crit') { if (/^RADAR/.test(msg)) sfxAlarm(); else if (/^AIR RAID/.test(msg)) { sfxBoom(0, 1); sfxBoom(0.5, 0.8); sfxBoom(1.1, 0.9); } else tone('square', 300, 0.18, 0.025); }
+  else if (cls === 'good') sfxChime();
+}
+// ---------- Terminal chrome, tactical map, input, main loop ----------
+const TABS = [['missions', 'Tasking'], ['flightline', 'Flightline'], ['supply', 'Supply'], ['base', 'Base'], ['tac', 'Tac map'], ['log', 'Comms']];
+let lastTop = '', lastTabs = '', lastOverlay = '', lastTicker = '';
+function updateTop() {
+  $('#clock').textContent = fmtT(S.t);
+  $('#funds').textContent = money(S.funds);
+  const rep = $('#rep'); rep.textContent = Math.round(S.rep); rep.className = S.rep < 25 ? 'crit' : S.rep < 45 ? 'warn' : '';
+  const tl = threatLevel(), al = $('#alert'); al.textContent = tl; al.className = tl === 'RED' ? 'crit' : tl === 'AMBER' ? 'warn' : 'ok';
+  const sp = SPEED_LBL.map((l, i) => `<button class="btn${S.speed === i ? ' on' : ''}" data-act="speed" data-v="${i}" aria-pressed="${S.speed === i}">${l}</button>`).join('') + `<button class="btn${SND.on ? ' on' : ''}" data-act="sound" aria-pressed="${SND.on}" style="margin-left:8px">Sound</button>`;
+  if (sp !== lastTop) { $('#speed').innerHTML = sp; lastTop = sp; }
+  $('#wx').textContent = `${WX_NAME[S.wx.kind]} · wind ${pad2(S.wx.wind / 10)}0/${pad2(S.wx.kt)} kt`;
+  const closed = S.t < S.runway.closedUntil; const rs = $('#rwystate');
+  rs.textContent = closed ? 'Runway closed' : S.runway.busy ? 'Runway occupied' : 'Runway open';
+  rs.style.color = closed ? 'var(--crit)' : '';
+  const camp = isCampaign();
+  $('#rankstat').hidden = !camp; $('#shiftstat').hidden = !(camp && S.shift);
+  if (camp) {
+    $('#rankname').textContent = CAREER[rankIdx()].short; $('#xpline').textContent = `Rank · ${S.xp} XP`;
+    if (S.shift) { $('#shiftleft').textContent = S.debrief ? 'Shift over' : fmtDur(S.shift.end - S.t); $('#shiftname').textContent = `${S.shift.name} ${S.shift.n} left`; }
+  }
+}
+function renderTabs() {
+  const open = S.missions.filter(m => m.status === 'open'), urgent = open.some(m => m.type === 'INTERCEPT');
+  const badge = { missions: open.length ? `<i class="${urgent ? '' : 'n'}">${open.length}</i>` : '', tac: S.flights.length ? `<i class="n">${S.flights.length}</i>` : '' };
+  if (UI.tab === 'career' && !isCampaign()) UI.tab = 'missions';
+  const tabs = isCampaign() ? [TABS[0], ['career', 'Career'], ...TABS.slice(1)] : TABS;
+  const html = tabs.map(([k, l]) => `<button class="tab${UI.tab === k ? ' on' : ''}" data-act="tab" data-tab="${k}" aria-current="${UI.tab === k}">${l}${badge[k] || ''}</button>`).join('');
+  if (html !== lastTabs) { $('#tabs').innerHTML = html; lastTabs = html; }
+}
+function overlayHTML() {
+  if (S.over) return `<div class="brief" role="dialog" aria-labelledby="ovt"><p class="h">Message from wing command</p><h1 id="ovt">Relieved of command</h1>
+    <p>Your command rating reached zero on ${fmtT(S.t)}. A new duty officer is taking over Kestrel Field.</p>
+    <ul>${isCampaign() ? `<li>Final rank <b>${CAREER[rankIdx()].name}</b> with ${S.xp} XP after <b>${S.shiftsDone}</b> shifts</li>` : ''}<li><b>${S.stats.won}</b> operations completed, <b>${S.stats.failed}</b> failed</li><li><b>${S.stats.kills}</b> enemy aircraft destroyed</li><li><b>${S.stats.lost}</b> jets lost, <b>${S.stats.sorties}</b> sorties flown</li></ul>
+    <div class="acts"><button class="btn go big" data-act="new">Start again</button></div></div>`;
+  if (S.started) return S.debrief ? debriefHTML() : '';
+  const intro = `<p class="h">Shift briefing · Kestrel Field</p><h1 id="ovt">You have the ops desk</h1>
+    <p>Out the window is runway 27 and the ramp. On the terminal is everything that keeps it working. Order fuel and munitions, turn jets around, and send flights on tasking.</p>
+    <ul><li><b>Tasking</b> pays the budget. Ignored or failed operations cost command rating.</li>
+      <li><b>Flightline</b>: refuel, arm and repair. <b>Supply</b> comes in by C-130.</li>
+      <li><b>Base</b>: build hangars and air defences, train crews, buy aircraft.</li>
+      <li><b>Tac map</b>: follow flights, change tactics in the air, send them to the tanker or home.</li>
+      <li>Raids that reach the base burn fuel and crater the runway. Intercept them.</li></ul>
+    <p class="muted">Space pauses, keys 1 to 4 set speed. Progress is saved in this browser.</p>`;
+  if (UI.resume) return `<div class="brief" role="dialog" aria-labelledby="ovt">${intro}<div class="acts"><button class="btn go big" data-act="resume">Resume ${isCampaign() ? 'campaign' : 'free play'} · ${fmtT(S.t)}</button><button class="btn" data-act="new">New game</button></div></div>`;
+  return `<div class="brief" role="dialog" aria-labelledby="ovt">${intro}<div class="modes">
+    <button class="mode go" data-act="campaign"><b>Campaign</b><span>Work 8-hour shifts with three objectives each. Earn XP, get promoted and unlock new aircraft, base upgrades and training.</span></button>
+    <button class="mode" data-act="free"><b>Free play</b><span>No shifts and no ranks. Every aircraft and upgrade is available from the start.</span></button></div></div>`;
+}
+function renderUI(force) {
+  if (!S) return;
+  updateTop(); renderTabs();
+  const ov = overlayHTML();
+  if (ov !== lastOverlay) { const o = $('#overlay'); o.innerHTML = ov; o.hidden = !ov; lastOverlay = ov; }
+  const last = S.log[S.log.length - 1];
+  const tk = last ? `<time>${fmtClock(last.t)}</time><span class="${last.cls === 'crit' ? 'critc' : last.cls === 'good' ? 'okc' : last.cls === 'warn' ? 'warnc' : ''}">${esc(last.msg)}</span>` : '';
+  if (tk !== lastTicker) { $('#ticker').innerHTML = tk; lastTicker = tk; }
+  if (UI.down && !force) return;
+  const panel = $('#panel'), changed = UI.lastTab !== UI.tab;
+  if (changed) { UI.lastHTML = ''; UI.lastSide = ''; }
+  if (UI.tab === 'tac') {
+    if (changed || !$('#tacmap')) panel.innerHTML = '<div class="tac"><div class="scope"><canvas id="tacmap" aria-label="Tactical map, 300 km around Kestrel Field"></canvas></div><div class="side" id="tacside"></div></div>';
+    const html = tacSideHTML();
+    if (html !== UI.lastSide) { $('#tacside').innerHTML = html; UI.lastSide = html; }
+  } else {
+    const html = { supply: supplyHTML, flightline: flightlineHTML, missions: missionsHTML, base: baseHTML, career: careerHTML, log: logHTML }[UI.tab]();
+    if (html !== UI.lastHTML) { panel.innerHTML = html; UI.lastHTML = html; }
+  }
+  if (changed) { panel.scrollTop = 0; UI.lastTab = UI.tab; }
+}
+
+// ---------- Tactical map ----------
+const COAST = Array.from({ length: 33 }, (_, i) => { const y = -320 + i * 20; return [130 + Math.sin(y / 60) * 34 + Math.sin(y / 23) * 12, y]; });
+let TAC = { ox: 0, oy: 0, s: 1 };
+function drawTac(now) {
+  const c = $('#tacmap'); if (!c) return;
+  const r = c.getBoundingClientRect(); if (r.width < 20) return;
+  const dpr = 0.5;   // printed-map look: half resolution, scaled up pixelated
+  if (c.width !== Math.round(r.width * dpr) || c.height !== Math.round(r.height * dpr)) { c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr); }
+  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const w = r.width, h = r.height, ox = w / 2, oy = h / 2, s = (Math.min(w, h) / 2 - 16) / 300;
+  TAC = { ox, oy, s };
+  const P = (x, y) => [ox + x * s, oy + y * s];
+  g.fillStyle = '#d3c7a2'; g.fillRect(0, 0, w, h);
+  g.fillStyle = 'rgba(45,60,71,.2)'; g.beginPath(); COAST.forEach(([x, y], i) => { const p = P(x, y); i ? g.lineTo(...p) : g.moveTo(...p); }); g.lineTo(w + 10, h + 10); g.lineTo(w + 10, -10); g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(46,38,32,.75)'; g.lineWidth = 2; g.beginPath(); COAST.forEach(([x, y], i) => { const p = P(x, y); i ? g.lineTo(...p) : g.moveTo(...p); }); g.stroke();
+  g.strokeStyle = 'rgba(46,38,32,.12)'; g.beginPath();
+  for (let v = -300; v <= 300; v += 50) { g.moveTo(...P(v, -400)); g.lineTo(...P(v, 400)); g.moveTo(...P(-400, v)); g.lineTo(...P(400, v)); }
+  g.stroke();
+  g.font = '16px "Silkscreen", monospace'; g.textAlign = 'left';
+  for (const rr of [100, 200, 300]) { g.strokeStyle = 'rgba(46,38,32,.45)'; g.beginPath(); g.arc(ox, oy, rr * s, 0, Math.PI * 2); g.stroke(); g.fillStyle = 'rgba(46,38,32,.8)'; g.fillText(`${rr} km`, ox + 4, oy - rr * s + 12); }
+  for (const [lbl, x, y] of [['N', 0, -1], ['E', 1, 0], ['S', 0, 1], ['W', -1, 0]]) { g.fillStyle = '#2e2620'; g.textAlign = 'center'; g.fillText(lbl, ox + x * (300 * s + 9), oy + y * (300 * s + 9) + 4); }
+  const sw = (now / 3000) % 1 * Math.PI * 2;
+  for (let i = 0; i < 24; i++) { const a = sw - i * 0.02; g.strokeStyle = `rgba(122,46,31,${0.07 * (1 - i / 24)})`; g.beginPath(); g.moveTo(ox, oy); g.lineTo(ox + Math.cos(a) * 300 * s, oy + Math.sin(a) * 300 * s); g.stroke(); }
+  g.textAlign = 'left';
+  for (const m of S.missions) {
+    if (!(m.status === 'open' || m.status === 'active') || m.type === 'INTERCEPT') continue;
+    const [x, y] = P(m.x, m.y), sel = m.id === UI.selM;
+    if (m.sam) { g.strokeStyle = 'rgba(163,42,29,.5)'; g.setLineDash([3, 3]); g.beginPath(); g.arc(x, y, (8 + m.sam * 6) * s, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); }
+    g.fillStyle = m.status === 'active' ? '#7a2e1f' : 'rgba(122,46,31,.6)'; g.beginPath(); g.moveTo(x, y - 6); g.lineTo(x + 6, y); g.lineTo(x, y + 6); g.lineTo(x - 6, y); g.closePath(); g.fill();
+    if (sel) { g.strokeStyle = '#7a2e1f'; g.strokeRect(x - 9, y - 9, 18, 18); }
+    g.fillStyle = '#7a2e1f'; g.fillText(`${m.op} ${m.type}`, x + 9, y + 3);
+  }
+  for (const rd of S.raids) {
+    const [x, y] = P(rd.x, rd.y), a = Math.atan2(-rd.y, -rd.x);
+    g.strokeStyle = 'rgba(163,42,29,.55)'; g.setLineDash([2, 4]); g.beginPath(); g.moveTo(x, y); g.lineTo(ox, oy); g.stroke(); g.setLineDash([]);
+    g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = '#a32a1d'; g.beginPath(); g.moveTo(8, 0); g.lineTo(-6, -6); g.lineTo(-2, 0); g.lineTo(-6, 6); g.closePath(); g.fill(); g.restore();
+    const m = MS(rd.mission); g.fillStyle = '#a32a1d'; g.fillText(`${rd.n}× BANDIT${m ? ' · ' + m.op : ''}`, x + 10, y - 6);
+  }
+  for (const f of S.flights) {
+    if (f.state === 'launch') continue;
+    const [x, y] = P(f.x, f.y), sel = f.id === UI.selF;
+    g.fillStyle = 'rgba(36,80,110,.55)'; for (const [tx, ty] of f.trail) { const p = P(tx, ty); g.fillRect(p[0] - 1, p[1] - 1, 2, 2); }
+    const tg = flightTarget(f);
+    if (tg) { g.strokeStyle = 'rgba(36,80,110,.5)'; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(x, y); g.lineTo(...P(tg.x, tg.y)); g.stroke(); g.setLineDash([]); }
+    if (f.enemy) { g.fillStyle = '#a32a1d'; for (let i = 0; i < f.enemy.n; i++) g.fillRect(x + 12 + i * 6, y + 8, 4, 4); }
+    g.save(); g.translate(x, y); g.rotate(f.hdg);
+    g.fillStyle = isSupport(f) ? '#4f7f96' : '#24506e'; g.beginPath(); g.moveTo(9, 0); g.lineTo(-6, -6); g.lineTo(-3, 0); g.lineTo(-6, 6); g.closePath(); g.fill(); g.restore();
+    if (sel) { g.strokeStyle = '#24506e'; g.beginPath(); g.arc(x, y, 13, 0, Math.PI * 2); g.stroke(); }
+    g.fillStyle = '#24506e'; g.fillText(`${f.call} · ${f.state === 'engaged' ? 'ENGAGED' : FSTATE[f.state]}`, x + 12, y - 6);
+  }
+  g.fillStyle = '#2e2620'; g.fillRect(ox - 4, oy - 4, 8, 8); g.textAlign = 'right'; g.fillText('KESTREL', ox - 8, oy + 14); g.textAlign = 'left';
+}
+function tacClick(e) {
+  const c = e.target.getBoundingClientRect(), mx = e.clientX - c.left, my = e.clientY - c.top;
+  const near = (x, y) => hyp(TAC.ox + x * TAC.s - mx, TAC.oy + y * TAC.s - my);
+  let best = null, bd = 18;
+  for (const f of S.flights) if (f.state !== 'launch') { const d = near(f.x, f.y); if (d < bd) { bd = d; best = ['f', f.id]; } }
+  for (const m of S.missions) if (m.status === 'open' || m.status === 'active') { const p = mPos(m), d = near(p.x, p.y); if (d < bd) { bd = d; best = ['m', m.id]; } }
+  if (!best) return;
+  if (best[0] === 'f') UI.selF = best[1]; else { UI.selM = best[1]; UI.tab = 'missions'; }
+  renderUI(true);
+}
+
+// ---------- Input ----------
+function beginGame(mode) {
+  clearSave(); S = newGame(mode); S.started = true;
+  UI.resume = false; UI.selM = null; UI.selF = null; UI.pick.clear(); UI.tab = 'missions';
+  genMission('CAP');
+  log('Shift start. Viper 1-3 needs fuel and weapons, Viper 1-4 needs repairs.');
+  if (mode === 'campaign') beginShift();
+}
+function doAct(d) {
+  const a = d.id ? AC(d.id) : null, f = d.f ? FL(d.f) : null;
+  switch (d.act) {
+    case 'tab': UI.tab = d.tab; break;
+    case 'speed': S.speed = +d.v; break;
+    case 'order': order(d.k); break;
+    case 'turn': turnaround(a); break;
+    case 'refuel': queueTask(a, 'refuel'); break;
+    case 'repair': queueTask(a, 'repair'); break;
+    case 'arm': queueTask(a, 'arm', d.v); break;
+    case 'tanker': launch(null, [a.id], { ...DEFAULT_TAC }); break;
+    case 'replace': requestReplacement(a); break;
+    case 'build': startBuild(d.k); break;
+    case 'train': startTraining(d.k); break;
+    case 'buy': buyAircraft(d.k); break;
+    case 'swap': swapPilot(a); break;
+    case 'sound': setSound(!SND.on); break;
+    case 'selm': UI.selM = d.id; UI.pick.clear(); break;
+    case 'pick': if (UI.pick.has(d.id)) UI.pick.delete(d.id); else if (UI.pick.size < 4) UI.pick.add(d.id); break;
+    case 'tac': UI.tac[d.k] = d.v; break;
+    case 'launch': {
+      const before = S.flights.length;
+      if (launch(UI.selM, [...UI.pick], UI.tac)) { UI.pick.clear(); UI.selF = S.flights[before].id; }
+      break;
+    }
+    case 'self': UI.selF = d.id; break;
+    case 'ftac': if (f) { f.tac[d.k] = d.v; radio(`${f.call}: copy, ${TAC_OPTS[d.k].label.toLowerCase()} ${TAC_OPTS[d.k].opts.find(o => o[0] === d.v)[1].toLowerCase()}.`); } break;
+    case 'rtb': if (f) goRTB(f, 'ordered home'); break;
+    case 'tank': if (f) orderTanker(f); break;
+    case 'maps': UI.tab = 'tac'; UI.selF = d.f; break;
+    case 'campaign': case 'free': beginGame(d.act); break;
+    case 'nextshift': beginShift(); break;
+    case 'resume': S.started = true; UI.resume = false; break;
+    case 'new': clearSave(); S = newGame(); UI.resume = false; UI.selM = null; UI.selF = null; UI.pick.clear(); UI.tab = 'missions'; break;
+  }
+}
+document.addEventListener('pointerdown', e => { if (e.target.closest('#panel')) UI.down = true; });
+document.addEventListener('pointerup', () => { UI.down = false; });
+document.addEventListener('pointercancel', () => { UI.down = false; });
+document.addEventListener('click', e => {
+  if (e.target.id === 'tacmap') { tacClick(e); return; }
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  audioInit(); sfxClick();
+  doAct(b.dataset); UI.down = false; renderUI(true);
+});
+document.addEventListener('keydown', e => {
+  if (!S || !S.started || e.target.closest('input,textarea')) return;
+  if (e.code === 'Space' && !e.target.closest('button')) { e.preventDefault(); S.speed = S.speed ? 0 : 1; renderUI(true); }
+  if (/^Digit[1-4]$/.test(e.code)) { S.speed = +e.code.slice(5); renderUI(true); }
+});
+
+// ---------- Main loop ----------
+let lastNow = performance.now(), uiAcc = 0, saveAcc = 0;
+function frame(now) {
+  const dtR = Math.min(0.1, Math.max(0, (now - lastNow) / 1000)); lastNow = now;
+  if (S.started && !S.over && !S.debrief) { let g = dtR * SPEEDS[S.speed]; while (g > 1e-6 && !S.debrief && !S.over) { const st = Math.min(0.25, g); step(st); g -= st; } }
+  drawScene(now, dtR);
+  audioFrame();
+  if (UI.tab === 'tac') drawTac(now);
+  uiAcc += dtR; if (uiAcc >= 0.25) { uiAcc = 0; renderUI(); }
+  saveAcc += dtR; if (saveAcc >= 6) { saveAcc = 0; if (S.started || S.over) saveGame(); }
+  requestAnimationFrame(frame);
+}
+function boot(data) {
+  const hot = data && data.S;
+  S = hot || loadGame() || newGame();
+  if (!hot && S.started && !S.over) { UI.resume = true; S.started = false; }
+  initScenery(); sizeScene();
+  try { new ResizeObserver(sizeScene).observe(cv); } catch (e) { window.addEventListener('resize', sizeScene); }
+  renderUI(true);
+  requestAnimationFrame(frame);
+}
+try { window.claude?.hot?.snapshot?.(() => ({ S })); } catch (e) { /* not in a viewer */ }
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script></body></html>
