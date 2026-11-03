@@ -9,6 +9,11 @@ Eine einzige HTML-Datei, kein Server, kein Account. Der Spielstand liegt im `loc
 - `index.html` im Browser öffnen, fertig.
 - Online über **GitHub Pages**: Repo → Settings → Pages → Source „Deploy from a branch“ → Branch `main`, Ordner `/ (root)`. Danach läuft das Spiel unter `https://gloprglirp.github.io/AirbaseManager/`.
 
+- Auf **Render**:
+  - Am besten als **Static Site**: Build Command leer lassen, Publish Directory `.`. Kostenlos, schläft nicht ein.
+  - Oder als **Web Service**: Build Command `npm install`, Start Command `npm start`. Startet den kleinen Server in `server.js`.
+- Lokal mit Server: `npm start`, dann `http://localhost:3000`.
+
 Leertaste pausiert, Tasten 1–4 ändern das Tempo.
 
 ## Modi

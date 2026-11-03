@@ -1,0 +1,12 @@
+{
+  "name": "airbase-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kestrel Field Ops – Airbase-Management-Spiel im Pixel-Look",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "build": "sh build.sh"
+  },
+  "engines": { "node": ">=18" }
+}
