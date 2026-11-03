@@ -34,6 +34,10 @@ function moveFlight(f, tg, dt) {
 function closeMission(m, status) { m.status = status; m.closedAt = S.t; m.flight = null; }
 function goRTB(f, why) {
   if (f.state === 'rtb') return;
+  if (f.state === 'launch') {      // jets still on the ground stay home instead of taking off alone
+    for (const a of f.members.map(AC)) if (a && a.status === 'dep' && (a.phase === 'taxi' || a.phase === 'hold')) { a.status = 'ready'; a.phase = null; a.phT = 0; a.flight = null; }
+    f.members = f.members.filter(id => { const a = AC(id); return a && a.status !== 'ready'; });
+  }
   f.state = 'rtb'; f.enemy = null;
   radio(`${f.call}: ${why}, RTB.`);
   const m = MS(f.mission);
@@ -172,7 +176,9 @@ function stepFlight(f, dt) {
     const d = moveFlight(f, flightTarget(f), dt);
     if (f.state === 'enroute' && d < 4) { f.state = 'station'; radio(f.kind === 'AWACS' ? `${f.call}: on station, picture is up. All flights, check in.` : `${f.call}: on station, tanker track open.`); }
     if (f.state === 'station') { f.stT += dt; f.x = f.tx + Math.cos(f.stT * 0.5) * 6; f.y = f.ty + Math.sin(f.stT * 0.5) * 6; f.hdg = f.stT * 0.5 + Math.PI / 2; }
-    if (f.kind === 'TANKER' && f.offload < 2) goRTB(f, 'offload complete'); else if (bingo(f)) goRTB(f, 'bingo fuel');
+    if (f.kind === 'TANKER' && f.offload < 2) goRTB(f, 'offload complete');
+    else if (f.state === 'station' && f.stT >= 120) goRTB(f, 'two hours on station, heading home');
+    else if (bingo(f)) goRTB(f, 'bingo fuel');
     return;
   }
   const m = MS(f.mission);
@@ -215,6 +221,16 @@ function stepFlight(f, dt) {
     airCombat(f, f.enemy, dt);
     if (f.enemy.n <= 0) { f.enemy = null; f.state = 'station'; radio(`${f.call}: resuming CAP.`); }
     else if (!members(f).some(hasA2A)) goRTB(f, 'Winchester, no weapons left');
+  }
+}
+// Safety net: an airborne jet whose flight is gone comes home and lands instead of circling forever
+function landOrphans() {
+  for (const a of S.fleet) {
+    if (a.status !== 'air') continue;
+    const f = FL(a.flight);
+    if (f && !f.dead && f.members.includes(a.id)) continue;
+    a.status = 'arr'; a.phase = 'inbound'; a.phT = 0; a.flight = null;
+    radio(`${a.call}: no flight to join, returning to Kestrel for landing.`);
   }
 }
 function orderTanker(f) {
@@ -329,6 +345,7 @@ function step(dt) {
   tickGround(dt);
   for (const f of S.flights) stepFlight(f, dt);
   S.flights = S.flights.filter(f => !f.dead);
+  landOrphans();
   stepRaids(dt);
   tickBase(dt);
   for (const m of S.missions) {
