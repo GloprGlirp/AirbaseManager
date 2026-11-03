@@ -1283,7 +1283,9 @@ function UL() { return Math.min(W * 0.062, H * 0.21); }
 function sizeScene() {
   const r = cv.getBoundingClientRect();
   W = Math.max(60, r.width); H = Math.max(60, r.height);
-  PX = W > 1000 ? 3 : 2;
+  // one art pixel = a whole number of device pixels, so the grid stays even
+  const dpr = window.devicePixelRatio || 1;
+  PX = Math.max(1, Math.round((W >= 1000 ? 2 : W >= 600 ? 1.5 : 1) * dpr)) / dpr;
   cv.width = Math.max(1, Math.round(W / PX)); cv.height = Math.max(1, Math.round(H / PX));
   cx.setTransform(1 / PX, 0, 0, 1 / PX, 0, 0);
 }
