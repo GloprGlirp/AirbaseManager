@@ -97,6 +97,28 @@ function endShift() {
   log(`${sh.name} ${sh.n} complete: ${met} of ${res.length} objectives, +${xp + missionXP} XP.`, 'good');
 }
 
+// ---------- Clipboard beside the terminal ----------
+function clipHTML() {
+  if (!S) return '';
+  const row = (text, st) => `<div class="ord ${st.done ? 'done' : st.failed ? 'failed' : ''}"><span class="box"></span><span>${text}</span><span class="st">${st.label}</span></div>`;
+  if (isCampaign() && S.shift) {
+    const sh = S.shift;
+    return `<div class="sheet"><p class="when">Shift orders · ${sh.name} ${sh.n}</p><h3>${S.debrief ? 'Shift over' : `${fmtDur(sh.end - S.t)} left`}</h3>
+      ${sh.objectives.map(o => row(objText(o), objState(o))).join('')}
+      <p class="foot">Each objective: +40 XP and ${money(150)}. All three: +1 perk point.</p></div>`;
+  }
+  const ready = S.fleet.filter(a => !readiness(a) && !isSupportType(a.type)).length;
+  const unanswered = S.raids.filter(r => { const m = MS(r.mission); return !(m && m.status === 'active'); }).length;
+  const items = [
+    ['Keep 2 jets ready for alerts', { done: ready >= 2, failed: ready === 0, label: `${ready} ready` }],
+    ['Keep the fuel farm above 150 kL', { done: S.res.fuel >= 150, failed: S.res.fuel < 75, label: `${Math.round(S.res.fuel)} kL` }],
+    ['Answer every raid with an intercept', { done: !unanswered, failed: unanswered > 0, label: S.raids.length ? (unanswered ? `${unanswered} raid${unanswered > 1 ? 's' : ''} unanswered` : 'All raids covered') : 'Sky clear' }],
+    ['Fly the open operations', { done: !S.missions.some(m => m.status === 'open'), label: `${S.missions.filter(m => m.status === 'open').length} open` }],
+  ];
+  return `<div class="sheet"><p class="when">Standing orders · Kestrel Field</p><h3>${fmtClock(S.t)}</h3>${items.map(([t, st]) => row(t, st)).join('')}
+    <p class="foot">${isCampaign() ? 'Shift orders appear here when your shift starts.' : 'Free play has no shift objectives.'}</p></div>`;
+}
+
 // ---------- Campaign screens ----------
 function xpBar() {
   const r = rankIdx(), cur = CAREER[r], nxt = CAREER[r + 1];

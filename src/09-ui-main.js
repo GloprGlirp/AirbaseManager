@@ -52,6 +52,8 @@ function renderUI(force) {
   if (!S) return;
   tutTick();
   updateTop(); renderTabs();
+  const cl = clipHTML();
+  if (cl !== UI.lastClip) { $('#clip').innerHTML = cl; UI.lastClip = cl; }
   const ch = coachHTML(), co = $('#coach');
   if (ch !== UI.lastCoach) { co.innerHTML = ch; co.hidden = !ch; UI.lastCoach = ch; }
   const ov = overlayHTML();

@@ -19,7 +19,7 @@ const TUT = [
   { text: 'Open the <b>Base</b> tab.', sel: '[data-act=tab][data-tab=base]', done: () => UI.tab === 'base' },
   { text: 'Here you build hangars and air defences, train ground crews and pilots, and buy new aircraft. Locked items show the rank that unlocks them.', next: true },
   { text: 'Open the <b>Career</b> tab.', sel: '[data-act=tab][data-tab=career]', done: () => UI.tab === 'career', campaign: true },
-  { text: 'Each shift has three objectives. Meet them before the shift ends to earn XP and bonus budget, and get promoted to unlock more.', sel: '.objs', next: true, campaign: true },
+  { text: 'Each shift has three objectives. They are also pinned on the clipboard next to the terminal on larger screens. Meet them before the shift ends to earn XP and bonus budget, and get promoted to unlock more.', sel: '.objs', next: true, campaign: true },
   { text: 'One last thing: when the radar reports hostile contacts, an alarm sounds. Launch an <b>Intercept</b> quickly, or the raid hits the base. That is the job. Good luck!', next: true, last: true },
 ];
 function tutSkipInvalid() {
