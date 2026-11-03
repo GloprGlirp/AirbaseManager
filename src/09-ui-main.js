@@ -12,6 +12,7 @@ function updateTop() {
   const closed = S.t < S.runway.closedUntil; const rs = $('#rwystate');
   rs.textContent = closed ? 'Runway closed' : S.runway.busy ? 'Runway occupied' : 'Runway open';
   rs.style.color = closed ? 'var(--crit)' : '';
+  $('#pausedTag').hidden = !(S.started && !S.over && !S.debrief && S.speed === 0);
   const camp = isCampaign();
   $('#rankstat').hidden = !camp; $('#shiftstat').hidden = !(camp && S.shift);
   if (camp) {

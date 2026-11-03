@@ -1,9 +1,22 @@
 <div class="room">
+  <header class="topbar" aria-label="Base status">
+    <div class="brand">KESTREL FIELD<small>Base operations</small></div>
+    <div class="readouts">
+      <div class="stat"><b id="clock">D1 06:40</b><span>Local time</span></div>
+      <div class="stat" id="shiftstat" hidden><b id="shiftleft">8h 00m</b><span id="shiftname">Day shift 1</span></div>
+      <div class="stat"><b id="funds">$2.40M</b><span>Budget</span></div>
+      <div class="stat"><b id="rep">60</b><span>Command rating</span></div>
+      <div class="stat"><b id="alert" class="ok">GREEN</b><span>Air threat</span></div>
+      <div class="stat" id="rankstat" hidden><b id="rankname">2nd Lt</b><span id="xpline">0 XP</span></div>
+    </div>
+    <div class="speed" role="group" aria-label="Game speed, help and sound" id="speed"></div>
+  </header>
   <section class="windowband" aria-label="View from the operations office window">
     <div class="window">
       <div class="glass"><canvas id="outside" aria-label="Kestrel Field flightline: runway 27, taxiway and parking ramp"></canvas></div>
       <div class="mullion" aria-hidden="true"></div>
       <div class="blinds" aria-hidden="true"></div>
+      <div class="paused" id="pausedTag" hidden>Paused · press 1× or Space</div>
       <div class="plate"><span>RWY 09/27</span><span id="wx">Wind 270/07 kt</span><span id="rwystate">Runway open</span></div>
     </div>
   </section>
@@ -11,20 +24,10 @@
     <div class="props" aria-hidden="true"><div class="mug"></div></div>
     <div class="monitor">
       <div class="screen" id="screen">
-        <header class="topbar">
-          <div class="brand">KESTREL FIELD<small>Base operations terminal</small></div>
-          <div class="stat"><b id="clock">D1 06:40</b><span>Local time</span></div>
-          <div class="stat"><b id="funds">$2.40M</b><span>Budget</span></div>
-          <div class="stat"><b id="rep">60</b><span>Command rating</span></div>
-          <div class="stat"><b id="alert" class="ok">GREEN</b><span>Air threat</span></div>
-          <div class="stat" id="shiftstat" hidden><b id="shiftleft">8h 00m</b><span id="shiftname">Day shift 1</span></div>
-          <div class="stat" id="rankstat" hidden><b id="rankname">2nd Lt</b><span id="xpline">0 XP</span></div>
-          <div class="speed" role="group" aria-label="Game speed" id="speed"></div>
-        </header>
         <nav class="tabs" id="tabs" aria-label="Terminal sections"></nav>
         <div class="coach" id="coach" hidden aria-live="polite"></div>
         <main class="panel" id="panel"></main>
-        <div class="ticker" id="ticker" aria-live="polite"></div>
+        <div class="ticker" id="ticker" aria-live="polite" data-act="tab" data-tab="log" title="Open the comms log"></div>
         <div class="overlay" id="overlay" hidden></div>
       </div>
       <div class="chin"><span>KFO · Ops-3</span><span class="led"></span></div>

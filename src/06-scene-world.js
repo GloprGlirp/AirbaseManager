@@ -140,7 +140,7 @@ function drawAirfield(L, now) {
   for (let x = 0.035; x < 1; x += 0.07) { cx.moveTo(x * W, ay); cx.lineTo(x * W, H); }
   cx.stroke();
   cx.fillStyle = `rgba(232,190,60,${0.45 + 0.4 * L})`;
-  cx.font = `${Math.round(Math.max(8, 14 / PX)) * PX}px "Silkscreen", monospace`; cx.textAlign = 'center';
+  cx.font = `${Math.round(Math.max(8, clamp(W * 0.011, 9, 14) / PX)) * PX}px "Silkscreen", monospace`; cx.textAlign = 'center';
   [...SPOTS, CARGO_SPOT].forEach((x, i) => {
     cx.fillRect(x * W - PX / 2, G.twy * H, PX, (G.apr - G.twy) * H);
     cx.fillRect((x - 0.02) * W, G.apr * H + 3, 0.04 * W, PX);

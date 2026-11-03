@@ -14,7 +14,7 @@ function drawHangars(k, night, now, base) {
       cx.fillStyle = rgb(shade(open ? [30, 32, 34] : [82, 88, 86], k)); cx.fillRect(X + w * 0.1, base - h * 0.75, w * 0.8, h * 0.75);
       if (open && night > 0.3) { cx.fillStyle = `rgba(255,214,150,${0.25 + night * 0.3})`; cx.fillRect(X + w * 0.1, base - h * 0.75, w * 0.8, h * 0.75); }
       if (!open) { cx.fillStyle = rgb(shade([64, 70, 68], k)); for (let d = 1; d < 6; d++) cx.fillRect(X + w * (0.1 + d * 0.8 / 6), base - h * 0.75, PX, h * 0.75); }
-      cx.fillStyle = `rgba(240,240,232,${0.35 + 0.4 * (1 - night)})`; cx.font = `${Math.round(Math.max(8, 13 / PX)) * PX}px "Silkscreen", monospace`; cx.textAlign = 'left';
+      cx.fillStyle = `rgba(240,240,232,${0.35 + 0.4 * (1 - night)})`; cx.font = `${Math.round(Math.max(8, clamp(W * 0.01, 9, 13) / PX)) * PX}px "Silkscreen", monospace`; cx.textAlign = 'left';
       cx.fillText(`H${i + 1}`, X + 3, top + h * 0.2);
     } else if (i === S.base.hangar && prog >= 0) {
       cx.fillStyle = rgb(shade([150, 150, 144], k)); cx.fillRect(X, base - 2, w, 3);
