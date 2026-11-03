@@ -70,7 +70,7 @@ function flightlineHTML() {
     if (a.status === 'ordered') acts = `<span class="muted">Ferry flight arrives ${fmtClock(a.replacing)}</span>`;
     else if (a.status === 'lost') acts = a.replacing ? `<span class="muted">Ferry flight arrives ${fmtClock(a.replacing)}</span>` : `<button class="btn" data-act="replace" data-id="${a.id}" ${S.funds < replaceCost(a) ? 'disabled' : ''}>Request replacement · ${money(replaceCost(a))}</button>`;
     else if (parked) {
-      acts = `<button class="btn go" data-act="turn" data-id="${a.id}">Turnaround</button>
+      acts = `<button class="btn go" data-act="turn" data-id="${a.id}" title="Repair, refuel and re-arm in one go">Turnaround</button>
         <button class="btn" data-act="refuel" data-id="${a.id}" ${a.fuel >= 99.5 || S.res.fuel < 0.1 ? 'disabled' : ''}>Refuel</button>
         <button class="btn" data-act="repair" data-id="${a.id}" ${a.cond >= 99.5 || S.res.parts < 1 ? 'disabled' : ''}>Repair</button>`;
       if (T.tanker || T.awacs) acts += `<button class="btn cy" data-act="tanker" data-id="${a.id}" ${readiness(a) ? 'disabled' : ''}>${T.awacs ? 'Launch AWACS orbit' : 'Launch to tanker track'}</button>`;

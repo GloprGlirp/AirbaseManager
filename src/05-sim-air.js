@@ -282,6 +282,7 @@ function baseAttack(r) {
 // ---------- Tasking ----------
 function genMission(type) {
   const day = Math.floor(S.t / 1440);
+  if (!type && typeof tutActive === 'function' && tutActive()) type = 'CAP';   // no raids while learning
   if (!type) {
     const p = Math.min(0.35, 0.14 + day * 0.05), r = Math.random();
     type = r < p ? 'INTERCEPT' : r < p + 0.32 ? 'CAP' : r < p + 0.62 ? 'STRIKE' : 'RECON';

@@ -6,7 +6,7 @@ function updateTop() {
   $('#funds').textContent = money(S.funds);
   const rep = $('#rep'); rep.textContent = Math.round(S.rep); rep.className = S.rep < 25 ? 'crit' : S.rep < 45 ? 'warn' : '';
   const tl = threatLevel(), al = $('#alert'); al.textContent = tl; al.className = tl === 'RED' ? 'crit' : tl === 'AMBER' ? 'warn' : 'ok';
-  const sp = SPEED_LBL.map((l, i) => `<button class="btn${S.speed === i ? ' on' : ''}" data-act="speed" data-v="${i}" aria-pressed="${S.speed === i}">${l}</button>`).join('') + `<button class="btn${SND.on ? ' on' : ''}" data-act="sound" aria-pressed="${SND.on}" style="margin-left:8px">Sound</button>`;
+  const sp = SPEED_LBL.map((l, i) => `<button class="btn${S.speed === i ? ' on' : ''}" data-act="speed" data-v="${i}" aria-pressed="${S.speed === i}">${l}</button>`).join('') + `<button class="btn" data-act="tutorial" style="margin-left:8px" title="Restart the tutorial">Help</button>` + `<button class="btn${SND.on ? ' on' : ''}" data-act="sound" aria-pressed="${SND.on}" style="margin-left:8px">Sound</button>`;
   if (sp !== lastTop) { $('#speed').innerHTML = sp; lastTop = sp; }
   $('#wx').textContent = `${WX_NAME[S.wx.kind]} · wind ${pad2(S.wx.wind / 10)}0/${pad2(S.wx.kt)} kt`;
   const closed = S.t < S.runway.closedUntil; const rs = $('#rwystate');
@@ -43,12 +43,16 @@ function overlayHTML() {
     <p class="muted">Space pauses, keys 1 to 4 set speed. Progress is saved in this browser.</p>`;
   if (UI.resume) return `<div class="brief" role="dialog" aria-labelledby="ovt">${intro}<div class="acts"><button class="btn go big" data-act="resume">Resume ${isCampaign() ? 'campaign' : 'free play'} · ${fmtT(S.t)}</button><button class="btn" data-act="new">New game</button></div></div>`;
   return `<div class="brief" role="dialog" aria-labelledby="ovt">${intro}<div class="modes">
-    <button class="mode go" data-act="campaign"><b>Campaign</b><span>Work 8-hour shifts with three objectives each. Earn XP, get promoted and unlock new aircraft, base upgrades and training.</span></button>
+    <button class="mode go" data-act="tutorial-start"><b>Tutorial</b><span>Recommended for your first shift. A step-by-step guide through the desk, then the campaign carries on.</span></button>
+    <button class="mode" data-act="campaign"><b>Campaign</b><span>Work 8-hour shifts with three objectives each. Earn XP, get promoted and unlock new aircraft, base upgrades and training.</span></button>
     <button class="mode" data-act="free"><b>Free play</b><span>No shifts and no ranks. Every aircraft and upgrade is available from the start.</span></button></div></div>`;
 }
 function renderUI(force) {
   if (!S) return;
+  tutTick();
   updateTop(); renderTabs();
+  const ch = coachHTML(), co = $('#coach');
+  if (ch !== UI.lastCoach) { co.innerHTML = ch; co.hidden = !ch; UI.lastCoach = ch; }
   const ov = overlayHTML();
   if (ov !== lastOverlay) { const o = $('#overlay'); o.innerHTML = ov; o.hidden = !ov; lastOverlay = ov; }
   const last = S.log[S.log.length - 1];
@@ -66,6 +70,7 @@ function renderUI(force) {
     if (html !== UI.lastHTML) { panel.innerHTML = html; UI.lastHTML = html; }
   }
   if (changed) { panel.scrollTop = 0; UI.lastTab = UI.tab; }
+  applyCoach();
 }
 
 // ---------- Tactical map ----------
@@ -171,6 +176,10 @@ function doAct(d) {
     case 'maps': UI.tab = 'tac'; UI.selF = d.f; break;
     case 'campaign': case 'free': beginGame(d.act); break;
     case 'nextshift': beginShift(); break;
+    case 'tutorial-start': beginGame('campaign'); tutStart(); break;
+    case 'tutorial': if (S.started && !S.over) tutStart(); break;
+    case 'tutnext': tutAdvance(); break;
+    case 'tutskip': tutEnd(); break;
     case 'resume': S.started = true; UI.resume = false; break;
     case 'new': clearSave(); S = newGame(); UI.resume = false; UI.selM = null; UI.selF = null; UI.pick.clear(); UI.tab = 'missions'; break;
   }

@@ -18,6 +18,7 @@ Leertaste pausiert, Tasten 1–4 ändern das Tempo.
 
 ## Modi
 
+- **Tutorial:** Schritt-für-Schritt-Einführung beim ersten Start, danach geht die Kampagne weiter. Der Help-Knopf oben startet es jederzeit neu.
 - **Kampagne:** Früh-, Spät- und Nachtschicht (je 8 Spielstunden) mit 3 Zielen pro Schicht. Schichtbericht mit XP und Budget-Bonus, Beförderungen vom Second Lieutenant bis zum Brigadier General. Flugzeuge, Ausbauten und Ausbildung werden mit dem Rang freigeschaltet.
 - **Free Play:** keine Schichten, alles von Anfang an verfügbar.
 
@@ -49,6 +50,7 @@ Der Code liegt in Teilen unter `src/`, `build.sh` setzt daraus `index.html` zusa
 | `14-pixel.js` | Pixel-Look: Palette und Dithering der Fensteransicht |
 | `08-ui-panels.js`, `09-ui-main.js` | Terminal, Tac Map, Eingabe, Hauptschleife |
 | `11-audio.js` | Sound |
+| `15-tutorial.js` | Tutorial mit markierten Knöpfen |
 
 Nach Änderungen in `src/`:
 

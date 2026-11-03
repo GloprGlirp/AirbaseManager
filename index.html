@@ -192,7 +192,7 @@ body{background:var(--wall);color:var(--ink);font-family:var(--f-ui);font-size:1
 .rk{display:grid;grid-template-columns:210px minmax(0,1fr);gap:4px 12px;padding:7px 10px;border:1px solid var(--rule);font-size:12px;color:var(--muted);align-items:center}
 .rk b{display:block;font-weight:500}.rk small{font-size:10.5px}
 .rk.got b{color:var(--ok)}.rk.got{color:var(--ink)}.rk.cur{border-color:var(--amber);background:rgba(240,180,76,.05)}
-.modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .mode{font:inherit;color:inherit;text-align:left;background:transparent;border:1px solid var(--rule);padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:5px;border-radius:2px}
 .mode:hover{border-color:var(--amber)}
 .mode b{font-family:var(--f-label);font-size:18px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}
@@ -266,6 +266,13 @@ body{background:var(--wall) repeating-conic-gradient(#241e19 0 25%,transparent 0
 .clip::before{background:#8da3a8}
 :focus-visible{outline:2px dashed var(--amber)}
 .topbar :focus-visible{outline-color:var(--lcd-ink)}
+.coach{margin:8px 12px 0;padding:10px 12px;background:#ece0c2;border:2px solid var(--crit);box-shadow:3px 3px 0 rgba(46,38,32,.25);display:flex;flex-direction:column;gap:6px;flex:none}
+.coach p{margin:0;line-height:1.45;max-width:85ch}
+.coach-n{font-family:var(--f-label);font-size:10px;letter-spacing:.06em;color:var(--crit);text-transform:uppercase}
+.coach .acts{gap:8px}
+.coach-hl{outline:3px dashed var(--crit)!important;outline-offset:3px;animation:coachblink 1s steps(2,start) infinite}
+@keyframes coachblink{50%{outline-color:transparent}}
+@media (prefers-reduced-motion:reduce){.coach-hl{animation:none}}
 @media (max-width:1000px){.props{display:none}}
 @media (max-width:820px){
   .room{grid-template-rows:minmax(120px,30%) minmax(0,1fr)}
@@ -308,6 +315,7 @@ body{background:var(--wall) repeating-conic-gradient(#241e19 0 25%,transparent 0
           <div class="speed" role="group" aria-label="Game speed" id="speed"></div>
         </header>
         <nav class="tabs" id="tabs" aria-label="Terminal sections"></nav>
+        <div class="coach" id="coach" hidden aria-live="polite"></div>
         <main class="panel" id="panel"></main>
         <div class="ticker" id="ticker" aria-live="polite"></div>
         <div class="overlay" id="overlay" hidden></div>
@@ -1008,6 +1016,7 @@ function baseAttack(r) {
 // ---------- Tasking ----------
 function genMission(type) {
   const day = Math.floor(S.t / 1440);
+  if (!type && typeof tutActive === 'function' && tutActive()) type = 'CAP';   // no raids while learning
   if (!type) {
     const p = Math.min(0.35, 0.14 + day * 0.05), r = Math.random();
     type = r < p ? 'INTERCEPT' : r < p + 0.32 ? 'CAP' : r < p + 0.62 ? 'STRIKE' : 'RECON';
@@ -1879,7 +1888,7 @@ function flightlineHTML() {
     if (a.status === 'ordered') acts = `<span class="muted">Ferry flight arrives ${fmtClock(a.replacing)}</span>`;
     else if (a.status === 'lost') acts = a.replacing ? `<span class="muted">Ferry flight arrives ${fmtClock(a.replacing)}</span>` : `<button class="btn" data-act="replace" data-id="${a.id}" ${S.funds < replaceCost(a) ? 'disabled' : ''}>Request replacement · ${money(replaceCost(a))}</button>`;
     else if (parked) {
-      acts = `<button class="btn go" data-act="turn" data-id="${a.id}">Turnaround</button>
+      acts = `<button class="btn go" data-act="turn" data-id="${a.id}" title="Repair, refuel and re-arm in one go">Turnaround</button>
         <button class="btn" data-act="refuel" data-id="${a.id}" ${a.fuel >= 99.5 || S.res.fuel < 0.1 ? 'disabled' : ''}>Refuel</button>
         <button class="btn" data-act="repair" data-id="${a.id}" ${a.cond >= 99.5 || S.res.parts < 1 ? 'disabled' : ''}>Repair</button>`;
       if (T.tanker || T.awacs) acts += `<button class="btn cy" data-act="tanker" data-id="${a.id}" ${readiness(a) ? 'disabled' : ''}>${T.awacs ? 'Launch AWACS orbit' : 'Launch to tanker track'}</button>`;
@@ -2014,6 +2023,59 @@ function baseHTML() {
   return `<div class="secH"><h2>Construction</h2><p>One engineer team works on one project at a time.</p></div>${bStatus}<div class="grid" style="margin-top:10px">${ups}</div>
     <div class="secH" style="margin-top:22px"><h2>Personnel</h2><p>One training class at a time.</p></div>${tStatus}<div style="margin-top:10px">${people}</div>
     <div class="secH" style="margin-top:22px"><h2>Procurement</h2><p>Parking ${S.fleet.length} of ${slotCount()} used. Hangars add space. New jets arrive by ferry flight after ${fmtDur(REPLACE_ETA)}.</p></div><div class="grid">${shop}</div>`;
+}
+// ---------- Tutorial: step-by-step coach with highlighted controls ----------
+const tutActive = () => !!(S && S.tut);
+const hasOwnFlight = () => S.flights.some(f => !isSupport(f));
+const TUT = [
+  { text: 'Welcome to the ops desk. Out the window is runway 27 and the ramp with your jets. Down here is your terminal, where you run the base. Time is paused while you read.', next: true },
+  { text: 'Open the <b>Flightline</b> tab. It lists every aircraft with its fuel, damage, pilot fatigue and weapons.', sel: '[data-act=tab][data-tab=flightline]', done: () => UI.tab === 'flightline' },
+  { text: 'Viper 1-3 has low fuel and no weapons. Press <b>Turnaround</b> on its card. Turnaround queues everything a jet needs in one go: repair if damaged, refuel to 100%, and re-arm with its weapons load.', sel: '[data-act=turn][data-id=V13]',
+    done: () => { const a = AC('V13'); return !a || a.task || a.queue.length || a.status !== 'ready' || (a.fuel > 99 && a.load.aim120 > 0); } },
+  { text: 'Ground crews do the work, three at a time. Extra jobs wait in line. Now let time run: press <b>1×</b>. Watch the fuel truck drive up to the jet in the window.', sel: '[data-act=speed][data-v="1"]', done: () => S.speed > 0 },
+  { text: 'Operations earn your budget. Open the <b>Tasking</b> tab.', sel: '[data-act=tab][data-tab=missions]', done: () => UI.tab === 'missions' },
+  { text: 'This is a combat air patrol. Select <b>Viper 1-1</b> and <b>Viper 1-2</b> to fly it. Greyed-out jets are not ready, and the reason is shown on them.', sel: '.pick', done: () => UI.pick.size >= 2 || hasOwnFlight() },
+  { text: 'Tactics change how the flight fights: aggression, formation, rules of engagement and altitude. Each one shows what it does. The defaults are fine for now.', sel: '.tact', next: true },
+  { text: 'Press <b>Launch</b>.', sel: '[data-act=launch]', done: hasOwnFlight },
+  { text: 'Look out the window: your jets taxi to the runway and take off one after another. Landing aircraft always get the runway first.', next: true },
+  { text: 'Open the <b>Tac map</b> to follow the flight.', sel: '[data-act=tab][data-tab=tac]', done: () => UI.tab === 'tac' },
+  { text: 'On the right you can change tactics in the air, send a flight to the tanker for fuel, or call it home with <b>Order RTB</b>. Flights come home on their own when fuel gets low (bingo) or weapons run out (Winchester).', sel: '#tacside', next: true },
+  { text: 'Open the <b>Supply</b> tab.', sel: '[data-act=tab][data-tab=supply]', done: () => UI.tab === 'supply' },
+  { text: 'Every refuel and re-arm takes from these stores. Order more before they run out. Deliveries take a few hours and arrive by C-130 on your runway.', sel: '.res', next: true },
+  { text: 'Open the <b>Base</b> tab.', sel: '[data-act=tab][data-tab=base]', done: () => UI.tab === 'base' },
+  { text: 'Here you build hangars and air defences, train ground crews and pilots, and buy new aircraft. Locked items show the rank that unlocks them.', next: true },
+  { text: 'Open the <b>Career</b> tab.', sel: '[data-act=tab][data-tab=career]', done: () => UI.tab === 'career', campaign: true },
+  { text: 'Each shift has three objectives. Meet them before the shift ends to earn XP and bonus budget, and get promoted to unlock more.', sel: '.objs', next: true, campaign: true },
+  { text: 'One last thing: when the radar reports hostile contacts, an alarm sounds. Launch an <b>Intercept</b> quickly, or the raid hits the base. That is the job. Good luck!', next: true, last: true },
+];
+function tutSkipInvalid() {
+  while (S.tut && TUT[S.tut.i] && TUT[S.tut.i].campaign && !isCampaign()) S.tut.i++;
+  if (S.tut && S.tut.i >= TUT.length) tutEnd();
+}
+function tutStart() { S.tut = { i: 0 }; S.speed = 0; UI.tutScrolled = -1; tutSkipInvalid(); }
+function tutEnd() { S.tut = null; try { localStorage.setItem('kfo-tutorial-done', '1'); } catch (e) { /* ignore */ } }
+function tutAdvance() { if (!S.tut) return; S.tut.i++; tutSkipInvalid(); }
+function tutTick() {
+  if (!S.tut) return;
+  const st = TUT[S.tut.i];
+  if (st && st.done && st.done()) tutAdvance();
+}
+function coachHTML() {
+  if (!S.tut || !S.started || S.over || S.debrief) return '';
+  const st = TUT[S.tut.i]; if (!st) return '';
+  const total = TUT.filter(t => isCampaign() || !t.campaign).length;
+  const n = TUT.slice(0, S.tut.i + 1).filter(t => isCampaign() || !t.campaign).length;
+  return `<div class="coach-n">Tutorial ${n}/${total}</div><p>${st.text}</p><div class="acts">${st.next
+    ? `<button class="btn go" data-act="tutnext">${st.last ? 'Finish' : 'Next'}</button>`
+    : '<span class="muted">Do this to continue.</span>'}<button class="btn" data-act="tutskip">Skip tutorial</button></div>`;
+}
+function applyCoach() {
+  document.querySelectorAll('.coach-hl').forEach(e => e.classList.remove('coach-hl'));
+  if (!S.tut || !S.started || S.debrief) return;
+  const st = TUT[S.tut.i]; if (!st || !st.sel) return;
+  const el = document.querySelector(st.sel); if (!el) return;
+  el.classList.add('coach-hl');
+  if (UI.tutScrolled !== S.tut.i) { UI.tutScrolled = S.tut.i; try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) { /* ignore */ } }
 }
 // ---------- Sound: synthesized with Web Audio, heard through the office window ----------
 const SND = { ctx: null, on: true, L: null, radioBusy: 0 };
@@ -2160,7 +2222,7 @@ function updateTop() {
   $('#funds').textContent = money(S.funds);
   const rep = $('#rep'); rep.textContent = Math.round(S.rep); rep.className = S.rep < 25 ? 'crit' : S.rep < 45 ? 'warn' : '';
   const tl = threatLevel(), al = $('#alert'); al.textContent = tl; al.className = tl === 'RED' ? 'crit' : tl === 'AMBER' ? 'warn' : 'ok';
-  const sp = SPEED_LBL.map((l, i) => `<button class="btn${S.speed === i ? ' on' : ''}" data-act="speed" data-v="${i}" aria-pressed="${S.speed === i}">${l}</button>`).join('') + `<button class="btn${SND.on ? ' on' : ''}" data-act="sound" aria-pressed="${SND.on}" style="margin-left:8px">Sound</button>`;
+  const sp = SPEED_LBL.map((l, i) => `<button class="btn${S.speed === i ? ' on' : ''}" data-act="speed" data-v="${i}" aria-pressed="${S.speed === i}">${l}</button>`).join('') + `<button class="btn" data-act="tutorial" style="margin-left:8px" title="Restart the tutorial">Help</button>` + `<button class="btn${SND.on ? ' on' : ''}" data-act="sound" aria-pressed="${SND.on}" style="margin-left:8px">Sound</button>`;
   if (sp !== lastTop) { $('#speed').innerHTML = sp; lastTop = sp; }
   $('#wx').textContent = `${WX_NAME[S.wx.kind]} · wind ${pad2(S.wx.wind / 10)}0/${pad2(S.wx.kt)} kt`;
   const closed = S.t < S.runway.closedUntil; const rs = $('#rwystate');
@@ -2197,12 +2259,16 @@ function overlayHTML() {
     <p class="muted">Space pauses, keys 1 to 4 set speed. Progress is saved in this browser.</p>`;
   if (UI.resume) return `<div class="brief" role="dialog" aria-labelledby="ovt">${intro}<div class="acts"><button class="btn go big" data-act="resume">Resume ${isCampaign() ? 'campaign' : 'free play'} · ${fmtT(S.t)}</button><button class="btn" data-act="new">New game</button></div></div>`;
   return `<div class="brief" role="dialog" aria-labelledby="ovt">${intro}<div class="modes">
-    <button class="mode go" data-act="campaign"><b>Campaign</b><span>Work 8-hour shifts with three objectives each. Earn XP, get promoted and unlock new aircraft, base upgrades and training.</span></button>
+    <button class="mode go" data-act="tutorial-start"><b>Tutorial</b><span>Recommended for your first shift. A step-by-step guide through the desk, then the campaign carries on.</span></button>
+    <button class="mode" data-act="campaign"><b>Campaign</b><span>Work 8-hour shifts with three objectives each. Earn XP, get promoted and unlock new aircraft, base upgrades and training.</span></button>
     <button class="mode" data-act="free"><b>Free play</b><span>No shifts and no ranks. Every aircraft and upgrade is available from the start.</span></button></div></div>`;
 }
 function renderUI(force) {
   if (!S) return;
+  tutTick();
   updateTop(); renderTabs();
+  const ch = coachHTML(), co = $('#coach');
+  if (ch !== UI.lastCoach) { co.innerHTML = ch; co.hidden = !ch; UI.lastCoach = ch; }
   const ov = overlayHTML();
   if (ov !== lastOverlay) { const o = $('#overlay'); o.innerHTML = ov; o.hidden = !ov; lastOverlay = ov; }
   const last = S.log[S.log.length - 1];
@@ -2220,6 +2286,7 @@ function renderUI(force) {
     if (html !== UI.lastHTML) { panel.innerHTML = html; UI.lastHTML = html; }
   }
   if (changed) { panel.scrollTop = 0; UI.lastTab = UI.tab; }
+  applyCoach();
 }
 
 // ---------- Tactical map ----------
@@ -2325,6 +2392,10 @@ function doAct(d) {
     case 'maps': UI.tab = 'tac'; UI.selF = d.f; break;
     case 'campaign': case 'free': beginGame(d.act); break;
     case 'nextshift': beginShift(); break;
+    case 'tutorial-start': beginGame('campaign'); tutStart(); break;
+    case 'tutorial': if (S.started && !S.over) tutStart(); break;
+    case 'tutnext': tutAdvance(); break;
+    case 'tutskip': tutEnd(); break;
     case 'resume': S.started = true; UI.resume = false; break;
     case 'new': clearSave(); S = newGame(); UI.resume = false; UI.selM = null; UI.selF = null; UI.pick.clear(); UI.tab = 'missions'; break;
   }
