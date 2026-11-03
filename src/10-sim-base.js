@@ -56,6 +56,7 @@ function buyAircraft(type) {
   log(`Ordered a ${type} for ${money(T.price)}. ${a.call} arrives on a ferry flight in ${fmtDur(REPLACE_ETA)}.`);
 }
 function tickBase(dt) {
+  tickPerks();
   const rest = S.base.quarters ? 0.6 : 0.3;
   for (const a of S.fleet) {
     if (a.status === 'ready') a.fatigue = Math.max(0, a.fatigue - rest * dt);
@@ -79,5 +80,42 @@ function tickBase(dt) {
     else { const name = newPilotName(); S.pilots.push({ name, fatigue: 0 }); log(`${name} has qualified and joined the spare pilot pool.`, 'good'); }
     S.training = null;
     startTasks();
+  }
+}
+
+// ---------- Perks ----------
+function perkOwned(k) { return !!(S.perks && S.perks[k]); }
+function perkBlock(k) {
+  if (perkOwned(k)) return 'Owned';
+  if (isCampaign() && (S.perkPts || 0) < PERKS[k].cost) return 'Not enough perk points';
+  return null;
+}
+function unlockPerk(k) {
+  if (perkBlock(k)) return;
+  if (isCampaign()) S.perkPts -= PERKS[k].cost;
+  S.perks[k] = 'on';
+  log(`Perk unlocked: ${PERKS[k].name}. It is switched on.`, 'good');
+}
+function setPerk(k, on) { if (perkOwned(k)) S.perks[k] = on ? 'on' : 'off'; }
+function armStockFor(a, lo) {
+  const L = TYPES[a.type].loadouts[lo];
+  return !!L && WKEYS.some(k => (L[k] || 0) > (a.load[k] || 0) && S.res[k] >= 1);
+}
+function tickPerks() {
+  if (!S.perks) return;
+  const fuel = perkOn('autofuel'), arm = perkOn('autoarm'), fix = perkOn('autorepair');
+  if (fuel || arm || fix) for (const a of S.fleet) {
+    if (a.status !== 'ready' || a.task || a.queue.length) continue;
+    if (fix && a.cond < 95 && S.res.parts >= 1) queueTask(a, 'repair');
+    if (fuel && a.fuel < 95 && S.res.fuel >= 0.5) queueTask(a, 'refuel');
+    const lo = a.loadout || defaultLoadout(a.type);
+    if (arm && lo && needsArm(a, lo) && armStockFor(a, lo)) queueTask(a, 'arm', lo);
+  }
+  if (perkOn('autosupply') && S.t >= (S.nextAutoSupply || 0)) {
+    S.nextAutoSupply = S.t + 10;
+    for (const k of RES_KEYS) {
+      const R = RES_DEF[k], cap = capOf(k);
+      if (cap && S.res[k] + pending(k) < cap * 0.25 && !orderBlock(k) && S.funds >= R.cost + 300) order(k);
+    }
   }
 }

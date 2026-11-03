@@ -55,6 +55,7 @@ function beginTask(a, q) {
     const fix = dmg * p / needP;
     a.task = { kind: 'repair', t: 0, dur: 6 + fix * 0.45, condTo: Math.min(100, a.cond + fix) };
   }
+  if (a.task && perkOn('fastcrew')) a.task.dur *= 0.75;
 }
 function tickTasks(dt) {
   for (const a of S.fleet) {

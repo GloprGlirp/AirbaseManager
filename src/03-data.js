@@ -83,6 +83,16 @@ const UPGRADES = {
   bunker:   { name: 'Munitions bunker', note: '+50% storage for missiles, bombs, ammo and countermeasures.', cost: 600, time: 300, max: 2 },
   quarters: { name: 'Crew quarters', note: 'Pilots recover from fatigue twice as fast.', cost: 350, time: 240, max: 1 },
 };
+// Perks: automation and crew bonuses, unlocked with perk points in the campaign
+const PERKS = {
+  autofuel:   { name: 'Auto refuel', note: 'Crews refuel every parked jet below 95% without being asked.', cost: 1 },
+  autorepair: { name: 'Auto repair', note: 'Damaged jets go to the repair crews as soon as they park.', cost: 1 },
+  autoarm:    { name: 'Auto re-arm', note: 'Jets are reloaded with their last weapons load after every sortie.', cost: 2 },
+  fastcrew:   { name: 'Fast crews', note: 'Refuelling, arming and repairs take 25% less time.', cost: 2 },
+  autosupply: { name: 'Auto resupply', note: 'Orders fuel and munitions when stock drops below a quarter, keeping $300K in reserve.', cost: 2 },
+};
+const perkOn = k => !!(S && S.perks && S.perks[k] === 'on');
+const allPerksOff = () => Object.fromEntries(Object.keys(PERKS).map(k => [k, 'off']));
 const CREW_COST = 220, CREW_TIME = 240, CREW_MAX = 8;
 const PILOT_COST = 300, PILOT_TIME = 360, PILOT_MAX = 4;
 const RANKS = ['Capt.', '1st Lt.', 'Maj.', 'Capt.', '1st Lt.'];
@@ -157,7 +167,7 @@ function newFleet() {
   });
 }
 function newGame(mode = 'free') {
-  return { v: 2, mode, xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null,
+  return { v: 2, mode, xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null, perks: mode === 'free' ? allPerksOff() : {}, perkPts: 0,
     t: mode === 'campaign' ? 6 * 60 : 6 * 60 + 40, funds: 2400, rep: 60, speed: 1, started: false, over: false,
     crews: 3, base: { hangar: 0, patriot: 0, shorad: 0, fuelfarm: 0, bunker: 0, quarters: 0 }, build: null, training: null, pilots: [],
     res: { fuel: 360, aim120: 14, aim9: 18, agm65: 8, gbu12: 10, gun: 6000, chaff: 520, flare: 480, parts: 16, pac3: 0, stinger: 0 },
@@ -197,6 +207,7 @@ function migrate(o) {
     o.fleet.forEach((a, i) => { a.slot = SPOTS.includes(a.spot) ? SPOTS.indexOf(a.spot) : i; delete a.spot; });
   }
   if (!o.mode) Object.assign(o, { mode: 'free', xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null });
+  if (!o.perks) { o.perks = o.mode === 'free' ? allPerksOff() : {}; o.perkPts = 0; }
   return o;
 }
 function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } }

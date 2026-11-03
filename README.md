@@ -29,6 +29,7 @@ Leertaste pausiert, Tasten 1–4 ändern das Tempo.
 - **Flightline:** Tanken, Bewaffnen, Reparieren, Turnaround, Pilotentausch.
 - **Supply:** JP-8, AIM-120, AIM-9X, AGM-65, GBU-12, 20mm, Chaff, Flares, Ersatzteile, PAC-3, Stinger.
 - **Base:** Hangars, Patriot-Batterie, Avenger SHORAD, Tanklager, Munitionsbunker, Crew-Unterkünfte; Bodencrews und Ersatzpiloten ausbilden; Flugzeuge kaufen (F-16C, F-15E, F/A-18E, A-10C, F-35A, KC-135R, E-3G).
+- **Perks:** Auto refuel, Auto repair, Auto re-arm, Auto resupply und Fast crews. In der Kampagne mit Perk-Punkten freischalten (je Beförderung und saubere Schicht), jederzeit an- und ausschaltbar.
 - **Career:** Rang, XP, laufende Schichtziele, Rangleiter mit Freischaltungen.
 - **Tac map:** Papierkarte mit Flügen, Raids und Einsätzen; Taktik im Flug ändern, Tanker, Rückruf.
 - **Sound:** synthetisch per Web Audio (Triebwerke, Funk, Alarm, Explosionen, Donner).

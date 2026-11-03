@@ -443,6 +443,16 @@ const UPGRADES = {
   bunker:   { name: 'Munitions bunker', note: '+50% storage for missiles, bombs, ammo and countermeasures.', cost: 600, time: 300, max: 2 },
   quarters: { name: 'Crew quarters', note: 'Pilots recover from fatigue twice as fast.', cost: 350, time: 240, max: 1 },
 };
+// Perks: automation and crew bonuses, unlocked with perk points in the campaign
+const PERKS = {
+  autofuel:   { name: 'Auto refuel', note: 'Crews refuel every parked jet below 95% without being asked.', cost: 1 },
+  autorepair: { name: 'Auto repair', note: 'Damaged jets go to the repair crews as soon as they park.', cost: 1 },
+  autoarm:    { name: 'Auto re-arm', note: 'Jets are reloaded with their last weapons load after every sortie.', cost: 2 },
+  fastcrew:   { name: 'Fast crews', note: 'Refuelling, arming and repairs take 25% less time.', cost: 2 },
+  autosupply: { name: 'Auto resupply', note: 'Orders fuel and munitions when stock drops below a quarter, keeping $300K in reserve.', cost: 2 },
+};
+const perkOn = k => !!(S && S.perks && S.perks[k] === 'on');
+const allPerksOff = () => Object.fromEntries(Object.keys(PERKS).map(k => [k, 'off']));
 const CREW_COST = 220, CREW_TIME = 240, CREW_MAX = 8;
 const PILOT_COST = 300, PILOT_TIME = 360, PILOT_MAX = 4;
 const RANKS = ['Capt.', '1st Lt.', 'Maj.', 'Capt.', '1st Lt.'];
@@ -517,7 +527,7 @@ function newFleet() {
   });
 }
 function newGame(mode = 'free') {
-  return { v: 2, mode, xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null,
+  return { v: 2, mode, xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null, perks: mode === 'free' ? allPerksOff() : {}, perkPts: 0,
     t: mode === 'campaign' ? 6 * 60 : 6 * 60 + 40, funds: 2400, rep: 60, speed: 1, started: false, over: false,
     crews: 3, base: { hangar: 0, patriot: 0, shorad: 0, fuelfarm: 0, bunker: 0, quarters: 0 }, build: null, training: null, pilots: [],
     res: { fuel: 360, aim120: 14, aim9: 18, agm65: 8, gbu12: 10, gun: 6000, chaff: 520, flare: 480, parts: 16, pac3: 0, stinger: 0 },
@@ -557,6 +567,7 @@ function migrate(o) {
     o.fleet.forEach((a, i) => { a.slot = SPOTS.includes(a.spot) ? SPOTS.indexOf(a.spot) : i; delete a.spot; });
   }
   if (!o.mode) Object.assign(o, { mode: 'free', xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null });
+  if (!o.perks) { o.perks = o.mode === 'free' ? allPerksOff() : {}; o.perkPts = 0; }
   return o;
 }
 function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } }
@@ -617,6 +628,7 @@ function beginTask(a, q) {
     const fix = dmg * p / needP;
     a.task = { kind: 'repair', t: 0, dur: 6 + fix * 0.45, condTo: Math.min(100, a.cond + fix) };
   }
+  if (a.task && perkOn('fastcrew')) a.task.dur *= 0.75;
 }
 function tickTasks(dt) {
   for (const a of S.fleet) {
@@ -1172,6 +1184,7 @@ function buyAircraft(type) {
   log(`Ordered a ${type} for ${money(T.price)}. ${a.call} arrives on a ferry flight in ${fmtDur(REPLACE_ETA)}.`);
 }
 function tickBase(dt) {
+  tickPerks();
   const rest = S.base.quarters ? 0.6 : 0.3;
   for (const a of S.fleet) {
     if (a.status === 'ready') a.fatigue = Math.max(0, a.fatigue - rest * dt);
@@ -1195,6 +1208,43 @@ function tickBase(dt) {
     else { const name = newPilotName(); S.pilots.push({ name, fatigue: 0 }); log(`${name} has qualified and joined the spare pilot pool.`, 'good'); }
     S.training = null;
     startTasks();
+  }
+}
+
+// ---------- Perks ----------
+function perkOwned(k) { return !!(S.perks && S.perks[k]); }
+function perkBlock(k) {
+  if (perkOwned(k)) return 'Owned';
+  if (isCampaign() && (S.perkPts || 0) < PERKS[k].cost) return 'Not enough perk points';
+  return null;
+}
+function unlockPerk(k) {
+  if (perkBlock(k)) return;
+  if (isCampaign()) S.perkPts -= PERKS[k].cost;
+  S.perks[k] = 'on';
+  log(`Perk unlocked: ${PERKS[k].name}. It is switched on.`, 'good');
+}
+function setPerk(k, on) { if (perkOwned(k)) S.perks[k] = on ? 'on' : 'off'; }
+function armStockFor(a, lo) {
+  const L = TYPES[a.type].loadouts[lo];
+  return !!L && WKEYS.some(k => (L[k] || 0) > (a.load[k] || 0) && S.res[k] >= 1);
+}
+function tickPerks() {
+  if (!S.perks) return;
+  const fuel = perkOn('autofuel'), arm = perkOn('autoarm'), fix = perkOn('autorepair');
+  if (fuel || arm || fix) for (const a of S.fleet) {
+    if (a.status !== 'ready' || a.task || a.queue.length) continue;
+    if (fix && a.cond < 95 && S.res.parts >= 1) queueTask(a, 'repair');
+    if (fuel && a.fuel < 95 && S.res.fuel >= 0.5) queueTask(a, 'refuel');
+    const lo = a.loadout || defaultLoadout(a.type);
+    if (arm && lo && needsArm(a, lo) && armStockFor(a, lo)) queueTask(a, 'arm', lo);
+  }
+  if (perkOn('autosupply') && S.t >= (S.nextAutoSupply || 0)) {
+    S.nextAutoSupply = S.t + 10;
+    for (const k of RES_KEYS) {
+      const R = RES_DEF[k], cap = capOf(k);
+      if (cap && S.res[k] + pending(k) < cap * 0.25 && !orderBlock(k) && S.funds >= R.cost + 300) order(k);
+    }
   }
 }
 // ---------- Campaign: 8-hour shifts, objectives, XP, ranks, unlocks ----------
@@ -1230,8 +1280,8 @@ function addXP(n) {
   const before = rankIdx();
   S.xp += Math.round(n);
   for (let r = before + 1; r <= rankIdx(); r++) {
-    S.funds += 500;
-    log(`PROMOTED to ${CAREER[r].name}. Unlocked: ${CAREER[r].unlocks.map(unlockName).join(', ')}. $500K command bonus.`, 'good');
+    S.funds += 500; S.perkPts = (S.perkPts || 0) + 1;
+    log(`PROMOTED to ${CAREER[r].name}. Unlocked: ${CAREER[r].unlocks.map(unlockName).join(', ')}. $500K command bonus and 1 perk point.`, 'good');
   }
 }
 
@@ -1276,8 +1326,9 @@ function endShift() {
   const missionXP = S.xp - sh.xp0, xp = 60 + met * 40 + (met === res.length ? 40 : 0), cash = met * 150, r0 = rankIdx();
   const d = k => (S.stats[k] || 0) - (sh.s0[k] || 0);
   S.funds += cash; S.shiftsDone = sh.n; S.stars = (S.stars || 0) + met;
+  const perk = met === res.length; if (perk) S.perkPts = (S.perkPts || 0) + 1;
   addXP(xp);
-  S.debrief = { n: sh.n, name: sh.name, objectives: sh.objectives.map((o, i) => ({ text: objText(o), done: res[i] })), met, xp, missionXP, cash, r0, r1: rankIdx(),
+  S.debrief = { perk, n: sh.n, name: sh.name, objectives: sh.objectives.map((o, i) => ({ text: objText(o), done: res[i] })), met, xp, missionXP, cash, r0, r1: rankIdx(),
     won: d('won'), kills: d('kills'), lost: d('lost'), raids: sh.raidsHit };
   log(`${sh.name} ${sh.n} complete: ${met} of ${res.length} objectives, +${xp + missionXP} XP.`, 'good');
 }
@@ -1295,8 +1346,8 @@ function debriefHTML() {
     <h1 id="ovt">${d.met === d.objectives.length ? 'Clean shift' : `${d.met} of ${d.objectives.length} objectives`}</h1>
     <div class="objs">${d.objectives.map(o => `<div><span>${o.text}</span><span class="chip ${o.done ? 'ok' : 'crit'}">${o.done ? 'Done' : 'Missed'}</span></div>`).join('')}</div>
     <p class="muted">${d.won} operations completed · ${d.kills} kills · ${d.lost} jets lost · ${d.raids} raids on the base</p>
-    <p>+${d.missionXP} XP from operations, +${d.xp} XP for the shift${d.cash ? `, ${money(d.cash)} budget bonus` : ''}.</p>
-    ${promo ? `<p class="okc">Promoted to ${CAREER[d.r1].name}. Unlocked: ${unlocked}.</p>` : ''}
+    <p>+${d.missionXP} XP from operations, +${d.xp} XP for the shift${d.cash ? `, ${money(d.cash)} budget bonus` : ''}.${d.perk ? ' Clean shift: +1 perk point.' : ''}</p>
+    ${promo ? `<p class="okc">Promoted to ${CAREER[d.r1].name}. Unlocked: ${unlocked}. +${d.r1 - d.r0} perk point${d.r1 - d.r0 > 1 ? 's' : ''}.</p>` : ''}
     ${xpBar()}
     <div class="acts"><button class="btn go big" data-act="nextshift">Start ${shiftName(S.t)} ${d.n + 1}</button></div></div>`;
 }
@@ -1304,7 +1355,7 @@ function careerHTML() {
   const sh = S.shift, r = rankIdx();
   const objs = sh ? sh.objectives.map(o => { const st = objState(o); return `<div><span>${objText(o)}</span><span class="chip ${st.done ? 'ok' : st.failed ? 'crit' : 'idle'}">${st.label}</span></div>`; }).join('') : '';
   const ladder = CAREER.map((c, i) => `<div class="rk${i <= r ? ' got' : ''}${i === r ? ' cur' : ''}"><div><b>${c.name}</b><small>${c.xp.toLocaleString('en-US')} XP</small></div><span>${c.unlocks.map(unlockName).join(' · ')}</span></div>`).join('');
-  return `<div class="secH"><h2>Career</h2><p>${S.shiftsDone || 0} shifts served · ${S.stars || 0} objectives met</p></div>${xpBar()}
+  return `<div class="secH"><h2>Career</h2><p>${S.shiftsDone || 0} shifts served · ${S.stars || 0} objectives met · ${S.perkPts || 0} perk points (spend them on the Base tab)</p></div>${xpBar()}
     ${sh ? `<div class="secH" style="margin-top:18px"><h2>${sh.name} ${sh.n}</h2><p>Ends ${fmtClock(sh.end)}, in ${fmtDur(sh.end - S.t)}. Each objective met: +40 XP and ${money(150)}.</p></div><div class="objs">${objs}</div>` : ''}
     <div class="secH" style="margin-top:18px"><h2>Ranks and unlocks</h2><p>XP comes from operations, kills and shift objectives.</p></div><div class="ladder">${ladder}</div>`;
 }
@@ -1937,7 +1988,7 @@ function flightlineHTML() {
       <div class="task">${task}</div>
       <div class="acts">${acts}</div></article>`;
   }).join('');
-  return `<div class="secH"><h2>Flightline</h2><p>${crewsBusy()} of ${S.crews} ground crews working · ${S.fleet.length} of ${slotCount()} parking spaces · Turnaround queues repair, fuel and stores · A2A, CAP and STRIKE set the weapons load</p></div><div class="grid">${cards}</div>`;
+  return `<div class="secH"><h2>Flightline</h2><p>${crewsBusy()} of ${S.crews} ground crews working · ${S.fleet.length} of ${slotCount()} parking spaces${autoText()} · Turnaround queues repair, fuel and stores · A2A, CAP and STRIKE set the weapons load</p></div><div class="grid">${cards}</div>`;
 }
 
 function etaText(m) {
@@ -2052,9 +2103,27 @@ function baseHTML() {
       <div class="stats3"><span>Speed<b>${Math.round(T.speed * 60)} km/h</b></span><span>Fuel<b>${T.fuelKL} kL</b></span><span>Loads<b>${loads}</b></span></div>
       <div class="acts"><button class="btn go" data-act="buy" data-k="${t}" ${blk ? 'disabled' : ''}>Buy · ${money(T.price)}</button>${blk ? `<span class="warnc">${blk}</span>` : ''}</div></article>`;
   }).join('');
-  return `<div class="secH"><h2>Construction</h2><p>One engineer team works on one project at a time.</p></div>${bStatus}<div class="grid" style="margin-top:10px">${ups}</div>
+  return `${perksHTML()}<div class="secH" style="margin-top:22px"><h2>Construction</h2><p>One engineer team works on one project at a time.</p></div>${bStatus}<div class="grid" style="margin-top:10px">${ups}</div>
     <div class="secH" style="margin-top:22px"><h2>Personnel</h2><p>One training class at a time.</p></div>${tStatus}<div style="margin-top:10px">${people}</div>
     <div class="secH" style="margin-top:22px"><h2>Procurement</h2><p>Parking ${S.fleet.length} of ${slotCount()} used. Hangars add space. New jets arrive by ferry flight after ${fmtDur(REPLACE_ETA)}.</p></div><div class="grid">${shop}</div>`;
+}
+
+// ---------- Perks section (Base tab) ----------
+function autoText() {
+  const on = [['autofuel', 'refuel'], ['autoarm', 're-arm'], ['autorepair', 'repair'], ['autosupply', 'resupply']].filter(([k]) => perkOn(k)).map(x => x[1]);
+  return on.length ? ` · Auto ${on.join(', ')} on` : '';
+}
+function perksHTML() {
+  const camp = isCampaign(), pts = S.perkPts || 0;
+  const cards = Object.entries(PERKS).map(([k, P]) => {
+    const own = perkOwned(k), on = perkOn(k), blk = perkBlock(k);
+    const chip = own ? `<span class="chip ${on ? 'ok' : 'idle'}">${on ? 'On' : 'Off'}</span>` : '<span class="chip crit">Locked</span>';
+    const act = own ? seg('perkset', on ? 'on' : 'off', [['on', 'On'], ['off', 'Off']], `data-k="${k}"`)
+      : `<button class="btn go" data-act="perk" data-k="${k}" ${blk ? 'disabled' : ''}>Unlock · ${P.cost} point${P.cost > 1 ? 's' : ''}</button>`;
+    return `<article class="ac">${cardHead(P.name, chip)}<div class="sub">${P.note}</div><div class="acts">${act}</div></article>`;
+  }).join('');
+  const sub = camp ? `<b>${pts}</b> perk point${pts === 1 ? '' : 's'} to spend. Earn one with every promotion and every clean shift.` : 'All perks are available in free play. Switch them on as you like.';
+  return `<div class="secH"><h2>Perks</h2><p>${sub}</p></div><div class="grid">${cards}</div>`;
 }
 // ---------- Tutorial: step-by-step coach with highlighted controls ----------
 const tutActive = () => !!(S && S.tut);
@@ -2409,6 +2478,8 @@ function doAct(d) {
     case 'train': startTraining(d.k); break;
     case 'buy': buyAircraft(d.k); break;
     case 'swap': swapPilot(a); break;
+    case 'perk': unlockPerk(d.k); break;
+    case 'perkset': setPerk(d.k, d.v === 'on'); break;
     case 'sound': setSound(!SND.on); break;
     case 'selm': UI.selM = d.id; UI.pick.clear(); break;
     case 'pick': if (UI.pick.has(d.id)) UI.pick.delete(d.id); else if (UI.pick.size < 4) UI.pick.add(d.id); break;

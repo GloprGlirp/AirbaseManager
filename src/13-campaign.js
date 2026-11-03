@@ -31,8 +31,8 @@ function addXP(n) {
   const before = rankIdx();
   S.xp += Math.round(n);
   for (let r = before + 1; r <= rankIdx(); r++) {
-    S.funds += 500;
-    log(`PROMOTED to ${CAREER[r].name}. Unlocked: ${CAREER[r].unlocks.map(unlockName).join(', ')}. $500K command bonus.`, 'good');
+    S.funds += 500; S.perkPts = (S.perkPts || 0) + 1;
+    log(`PROMOTED to ${CAREER[r].name}. Unlocked: ${CAREER[r].unlocks.map(unlockName).join(', ')}. $500K command bonus and 1 perk point.`, 'good');
   }
 }
 
@@ -77,8 +77,9 @@ function endShift() {
   const missionXP = S.xp - sh.xp0, xp = 60 + met * 40 + (met === res.length ? 40 : 0), cash = met * 150, r0 = rankIdx();
   const d = k => (S.stats[k] || 0) - (sh.s0[k] || 0);
   S.funds += cash; S.shiftsDone = sh.n; S.stars = (S.stars || 0) + met;
+  const perk = met === res.length; if (perk) S.perkPts = (S.perkPts || 0) + 1;
   addXP(xp);
-  S.debrief = { n: sh.n, name: sh.name, objectives: sh.objectives.map((o, i) => ({ text: objText(o), done: res[i] })), met, xp, missionXP, cash, r0, r1: rankIdx(),
+  S.debrief = { perk, n: sh.n, name: sh.name, objectives: sh.objectives.map((o, i) => ({ text: objText(o), done: res[i] })), met, xp, missionXP, cash, r0, r1: rankIdx(),
     won: d('won'), kills: d('kills'), lost: d('lost'), raids: sh.raidsHit };
   log(`${sh.name} ${sh.n} complete: ${met} of ${res.length} objectives, +${xp + missionXP} XP.`, 'good');
 }
@@ -96,8 +97,8 @@ function debriefHTML() {
     <h1 id="ovt">${d.met === d.objectives.length ? 'Clean shift' : `${d.met} of ${d.objectives.length} objectives`}</h1>
     <div class="objs">${d.objectives.map(o => `<div><span>${o.text}</span><span class="chip ${o.done ? 'ok' : 'crit'}">${o.done ? 'Done' : 'Missed'}</span></div>`).join('')}</div>
     <p class="muted">${d.won} operations completed · ${d.kills} kills · ${d.lost} jets lost · ${d.raids} raids on the base</p>
-    <p>+${d.missionXP} XP from operations, +${d.xp} XP for the shift${d.cash ? `, ${money(d.cash)} budget bonus` : ''}.</p>
-    ${promo ? `<p class="okc">Promoted to ${CAREER[d.r1].name}. Unlocked: ${unlocked}.</p>` : ''}
+    <p>+${d.missionXP} XP from operations, +${d.xp} XP for the shift${d.cash ? `, ${money(d.cash)} budget bonus` : ''}.${d.perk ? ' Clean shift: +1 perk point.' : ''}</p>
+    ${promo ? `<p class="okc">Promoted to ${CAREER[d.r1].name}. Unlocked: ${unlocked}. +${d.r1 - d.r0} perk point${d.r1 - d.r0 > 1 ? 's' : ''}.</p>` : ''}
     ${xpBar()}
     <div class="acts"><button class="btn go big" data-act="nextshift">Start ${shiftName(S.t)} ${d.n + 1}</button></div></div>`;
 }
@@ -105,7 +106,7 @@ function careerHTML() {
   const sh = S.shift, r = rankIdx();
   const objs = sh ? sh.objectives.map(o => { const st = objState(o); return `<div><span>${objText(o)}</span><span class="chip ${st.done ? 'ok' : st.failed ? 'crit' : 'idle'}">${st.label}</span></div>`; }).join('') : '';
   const ladder = CAREER.map((c, i) => `<div class="rk${i <= r ? ' got' : ''}${i === r ? ' cur' : ''}"><div><b>${c.name}</b><small>${c.xp.toLocaleString('en-US')} XP</small></div><span>${c.unlocks.map(unlockName).join(' · ')}</span></div>`).join('');
-  return `<div class="secH"><h2>Career</h2><p>${S.shiftsDone || 0} shifts served · ${S.stars || 0} objectives met</p></div>${xpBar()}
+  return `<div class="secH"><h2>Career</h2><p>${S.shiftsDone || 0} shifts served · ${S.stars || 0} objectives met · ${S.perkPts || 0} perk points (spend them on the Base tab)</p></div>${xpBar()}
     ${sh ? `<div class="secH" style="margin-top:18px"><h2>${sh.name} ${sh.n}</h2><p>Ends ${fmtClock(sh.end)}, in ${fmtDur(sh.end - S.t)}. Each objective met: +40 XP and ${money(150)}.</p></div><div class="objs">${objs}</div>` : ''}
     <div class="secH" style="margin-top:18px"><h2>Ranks and unlocks</h2><p>XP comes from operations, kills and shift objectives.</p></div><div class="ladder">${ladder}</div>`;
 }

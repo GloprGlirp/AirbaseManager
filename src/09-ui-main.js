@@ -161,6 +161,8 @@ function doAct(d) {
     case 'train': startTraining(d.k); break;
     case 'buy': buyAircraft(d.k); break;
     case 'swap': swapPilot(a); break;
+    case 'perk': unlockPerk(d.k); break;
+    case 'perkset': setPerk(d.k, d.v === 'on'); break;
     case 'sound': setSound(!SND.on); break;
     case 'selm': UI.selM = d.id; UI.pick.clear(); break;
     case 'pick': if (UI.pick.has(d.id)) UI.pick.delete(d.id); else if (UI.pick.size < 4) UI.pick.add(d.id); break;

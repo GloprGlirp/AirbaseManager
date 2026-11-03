@@ -87,7 +87,7 @@ function flightlineHTML() {
       <div class="task">${task}</div>
       <div class="acts">${acts}</div></article>`;
   }).join('');
-  return `<div class="secH"><h2>Flightline</h2><p>${crewsBusy()} of ${S.crews} ground crews working · ${S.fleet.length} of ${slotCount()} parking spaces · Turnaround queues repair, fuel and stores · A2A, CAP and STRIKE set the weapons load</p></div><div class="grid">${cards}</div>`;
+  return `<div class="secH"><h2>Flightline</h2><p>${crewsBusy()} of ${S.crews} ground crews working · ${S.fleet.length} of ${slotCount()} parking spaces${autoText()} · Turnaround queues repair, fuel and stores · A2A, CAP and STRIKE set the weapons load</p></div><div class="grid">${cards}</div>`;
 }
 
 function etaText(m) {
@@ -202,7 +202,25 @@ function baseHTML() {
       <div class="stats3"><span>Speed<b>${Math.round(T.speed * 60)} km/h</b></span><span>Fuel<b>${T.fuelKL} kL</b></span><span>Loads<b>${loads}</b></span></div>
       <div class="acts"><button class="btn go" data-act="buy" data-k="${t}" ${blk ? 'disabled' : ''}>Buy · ${money(T.price)}</button>${blk ? `<span class="warnc">${blk}</span>` : ''}</div></article>`;
   }).join('');
-  return `<div class="secH"><h2>Construction</h2><p>One engineer team works on one project at a time.</p></div>${bStatus}<div class="grid" style="margin-top:10px">${ups}</div>
+  return `${perksHTML()}<div class="secH" style="margin-top:22px"><h2>Construction</h2><p>One engineer team works on one project at a time.</p></div>${bStatus}<div class="grid" style="margin-top:10px">${ups}</div>
     <div class="secH" style="margin-top:22px"><h2>Personnel</h2><p>One training class at a time.</p></div>${tStatus}<div style="margin-top:10px">${people}</div>
     <div class="secH" style="margin-top:22px"><h2>Procurement</h2><p>Parking ${S.fleet.length} of ${slotCount()} used. Hangars add space. New jets arrive by ferry flight after ${fmtDur(REPLACE_ETA)}.</p></div><div class="grid">${shop}</div>`;
+}
+
+// ---------- Perks section (Base tab) ----------
+function autoText() {
+  const on = [['autofuel', 'refuel'], ['autoarm', 're-arm'], ['autorepair', 'repair'], ['autosupply', 'resupply']].filter(([k]) => perkOn(k)).map(x => x[1]);
+  return on.length ? ` · Auto ${on.join(', ')} on` : '';
+}
+function perksHTML() {
+  const camp = isCampaign(), pts = S.perkPts || 0;
+  const cards = Object.entries(PERKS).map(([k, P]) => {
+    const own = perkOwned(k), on = perkOn(k), blk = perkBlock(k);
+    const chip = own ? `<span class="chip ${on ? 'ok' : 'idle'}">${on ? 'On' : 'Off'}</span>` : '<span class="chip crit">Locked</span>';
+    const act = own ? seg('perkset', on ? 'on' : 'off', [['on', 'On'], ['off', 'Off']], `data-k="${k}"`)
+      : `<button class="btn go" data-act="perk" data-k="${k}" ${blk ? 'disabled' : ''}>Unlock · ${P.cost} point${P.cost > 1 ? 's' : ''}</button>`;
+    return `<article class="ac">${cardHead(P.name, chip)}<div class="sub">${P.note}</div><div class="acts">${act}</div></article>`;
+  }).join('');
+  const sub = camp ? `<b>${pts}</b> perk point${pts === 1 ? '' : 's'} to spend. Earn one with every promotion and every clean shift.` : 'All perks are available in free play. Switch them on as you like.';
+  return `<div class="secH"><h2>Perks</h2><p>${sub}</p></div><div class="grid">${cards}</div>`;
 }
