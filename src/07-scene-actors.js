@@ -215,8 +215,11 @@ function drawWeather(L, now, dtR) {
     cx.fillStyle = g; cx.fillRect(0, H * 0.7, W, H * 0.3);
   }
 }
+let SKIP = 0, SKIPDT = 0;
 function drawScene(now, dtR) {
   if (!S || W < 10) return;
+  // large buffers redraw at 30 fps to keep the palette pass cheap
+  if (cv.width * cv.height > 250000) { SKIPDT += dtR; if ((SKIP++ & 1) === 0) return; dtR = SKIPDT; SKIPDT = 0; }
   const L = daylight(), ov = overcast(), gold = L > 0 && L < 1 ? 1 - Math.abs(L - 0.5) * 2 : 0, Le = L * (1 - ov * 0.35);
   drawSky(L, gold, ov, dtR);
   drawFarSide(Le, ov, now);

@@ -16,7 +16,8 @@ function sizeScene() {
   W = Math.max(60, r.width); H = Math.max(60, r.height);
   // one art pixel = a whole number of device pixels, so the grid stays even
   const dpr = window.devicePixelRatio || 1;
-  PX = Math.max(1, Math.round((W >= 1000 ? 2 : W >= 600 ? 1.5 : 1) * dpr)) / dpr;
+  // 1 art pixel = 1 device pixel on normal screens, 2 on retina; buffer capped at 1400 px wide
+  PX = Math.max((dpr >= 2 ? 2 : 1) / dpr, W / 1400);
   cv.width = Math.max(1, Math.round(W / PX)); cv.height = Math.max(1, Math.round(H / PX));
   cx.setTransform(1 / PX, 0, 0, 1 / PX, 0, 0);
 }
@@ -139,7 +140,7 @@ function drawAirfield(L, now) {
   for (let x = 0.035; x < 1; x += 0.07) { cx.moveTo(x * W, ay); cx.lineTo(x * W, H); }
   cx.stroke();
   cx.fillStyle = `rgba(232,190,60,${0.45 + 0.4 * L})`;
-  cx.font = `${8 * PX}px "Silkscreen", monospace`; cx.textAlign = 'center';
+  cx.font = `${Math.round(Math.max(8, 14 / PX)) * PX}px "Silkscreen", monospace`; cx.textAlign = 'center';
   [...SPOTS, CARGO_SPOT].forEach((x, i) => {
     cx.fillRect(x * W - PX / 2, G.twy * H, PX, (G.apr - G.twy) * H);
     cx.fillRect((x - 0.02) * W, G.apr * H + 3, 0.04 * W, PX);
