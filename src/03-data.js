@@ -77,6 +77,7 @@ const replaceCost = a => Math.round((TYPES[a.type].price || 2600) * 0.7 / 10) * 
 // Base development
 const UPGRADES = {
   hangar:   { name: 'Aircraft hangar', note: 'Room for 2 more aircraft. Jets inside are safe from raids.', cost: 900, time: 360, max: 4 },
+  rrr:      { name: 'Runway repair team', note: 'Craters are filled about twice as fast after a raid, and emergency repairs cost 30% less.', cost: 450, time: 150, max: 2 },
   patriot:  { name: 'Patriot SAM battery', note: 'Shoots down raiders out to 80 km. Needs PAC-3 interceptors.', cost: 1400, time: 480, max: 2 },
   shorad:   { name: 'Avenger SHORAD', note: 'Stinger launchers that cover the base itself.', cost: 450, time: 180, max: 3 },
   fuelfarm: { name: 'Fuel farm expansion', note: '+250 kL jet fuel storage.', cost: 500, time: 240, max: 2 },
@@ -169,7 +170,7 @@ function newFleet() {
 function newGame(mode = 'free') {
   return { v: 2, mode, xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null, perks: mode === 'free' ? allPerksOff() : {}, perkPts: 0, perkRankPaid: 0,
     t: mode === 'campaign' ? 6 * 60 : 6 * 60 + 40, funds: 2400, rep: 60, speed: 1, started: false, over: false,
-    crews: 3, base: { hangar: 0, patriot: 0, shorad: 0, fuelfarm: 0, bunker: 0, quarters: 0 }, build: null, training: null, pilots: [],
+    crews: 3, base: { hangar: 0, rrr: 0, patriot: 0, shorad: 0, fuelfarm: 0, bunker: 0, quarters: 0 }, build: null, training: null, pilots: [],
     res: { fuel: 360, aim120: 14, aim9: 18, agm65: 8, gbu12: 10, gun: 6000, chaff: 520, flare: 480, parts: 16, pac3: 0, stinger: 0 },
     fleet: newFleet(), missions: [], flights: [], raids: [], deliveries: [], cargo: [], fx: [],
     runway: { busy: null, closedUntil: 0 }, log: [], nextId: 1, nextMission: 6 * 60 + 43, budgetDay: 0,
@@ -207,6 +208,7 @@ function migrate(o) {
     o.fleet.forEach((a, i) => { a.slot = SPOTS.includes(a.spot) ? SPOTS.indexOf(a.spot) : i; delete a.spot; });
   }
   if (!o.mode) Object.assign(o, { mode: 'free', xp: 0, shiftsDone: 0, stars: 0, shift: null, debrief: null });
+  if (o.base && o.base.rrr == null) o.base.rrr = 0;
   if (!o.perks) { o.perks = o.mode === 'free' ? allPerksOff() : {}; o.perkPts = 0; }
   return o;
 }

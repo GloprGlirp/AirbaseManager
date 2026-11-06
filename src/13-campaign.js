@@ -1,6 +1,6 @@
 // ---------- Campaign: 8-hour shifts, objectives, XP, ranks, unlocks ----------
 const CAREER = [
-  { name: 'Second Lieutenant',  short: '2nd Lt',   xp: 0,    unlocks: ['type:F-16C', 'type:KC-135R', 'up:hangar', 'up:fuelfarm'] },
+  { name: 'Second Lieutenant',  short: '2nd Lt',   xp: 0,    unlocks: ['type:F-16C', 'type:KC-135R', 'up:hangar', 'up:rrr', 'up:fuelfarm'] },
   { name: 'First Lieutenant',   short: '1st Lt',   xp: 400,  unlocks: ['train:crew', 'up:shorad', 'up:bunker', 'type:F-15E'] },
   { name: 'Captain',            short: 'Capt',     xp: 1100,  unlocks: ['type:F/A-18E', 'train:pilot', 'up:quarters'] },
   { name: 'Major',              short: 'Maj',      xp: 2100, unlocks: ['type:A-10C', 'up:patriot'] },

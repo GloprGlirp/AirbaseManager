@@ -286,7 +286,8 @@ function baseAttack(r) {
   const fuelLoss = Math.round(S.res.fuel * rnd(0.15, 0.3) * sev);
   S.res.fuel -= fuelLoss;
   const kits = Math.min(4, S.res.parts); S.res.parts -= kits;
-  S.runway.closedUntil = S.t + (kits >= 4 ? 40 : 90);
+  const rrr = S.base.rrr || 0;
+  S.runway.closedUntil = S.t + Math.round((kits >= 4 ? 40 : 90) * (rrr >= 2 ? 0.35 : rrr ? 0.55 : 1));
   let extra = '';
   const parked = S.fleet.filter(a => a.status === 'ready' && !slotInfo(a.slot).hangar);
   if (parked.length && Math.random() < 0.6) { const a = pick(parked); a.cond = Math.max(5, a.cond - rnd(30, 60)); extra = ` ${a.call} damaged on the ramp.`; }
@@ -300,8 +301,10 @@ function genMission(type) {
   const day = Math.floor(S.t / 1440);
   if (!type && typeof tutActive === 'function' && tutActive()) type = 'CAP';   // no raids while learning
   if (!type) {
-    const p = Math.min(0.35, 0.14 + day * 0.05), r = Math.random();
+    const p = Math.min(0.3, 0.12 + day * 0.04), r = Math.random();
     type = r < p ? 'INTERCEPT' : r < p + 0.32 ? 'CAP' : r < p + 0.62 ? 'STRIKE' : 'RECON';
+    // breathing room: one raid at a time, none while the runway is cratered, and at least 2.5 h between raids
+    if (type === 'INTERCEPT' && (S.raids.length || S.t < S.runway.closedUntil || S.t - (S.lastRaidT ?? -1e9) < 150)) type = pick(['CAP', 'STRIKE', 'RECON']);
   }
   const threat = clamp(irnd(1, 3) + Math.floor(day / 2) + (Math.random() < 0.2 ? 1 : 0), 1, 5);
   const ang = rnd(0, Math.PI * 2), dist = rnd(70, 230);
@@ -317,7 +320,7 @@ function genMission(type) {
   if (type === 'INTERCEPT') {
     const d0 = rnd(250, 290) + (awacsUp() ? 45 : 0); m.x = Math.cos(ang) * d0; m.y = Math.sin(ang) * d0;
     const n = clamp(irnd(1, threat) + 1, 2, 6);
-    m.reward = 300 + threat * 100; m.rep = 8; m.expires = null; m.need = 'A2A';
+    m.reward = 300 + threat * 100; m.rep = 8; m.expires = null; m.need = 'A2A'; S.lastRaidT = S.t;
     m.brief = `${n} enemy fighters inbound to Kestrel Field. Intercept them before they reach the base.`;
     S.raids.push({ id: 'R' + (S.nextId++), mission: m.id, x: m.x, y: m.y, n, n0: n, skill: rnd(0.25, 0.4 + threat * 0.08), speed: rnd(7, 9.5), label: 'enemy fighters', engaged: null });
     log(`RADAR: ${n} hostile contacts bearing ${bearingName(m.x, m.y)}, ${Math.round(d0)} km, inbound. Op. ${m.op}: scramble.`, 'crit');

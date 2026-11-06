@@ -11,7 +11,7 @@ function updateTop() {
   $('#wx').textContent = `${WX_NAME[S.wx.kind]} · wind ${pad2(S.wx.wind / 10)}0/${pad2(S.wx.kt)} kt`;
   const closed = S.t < S.runway.closedUntil; const rs = $('#rwystate');
   rs.textContent = closed ? 'Runway closed' : S.runway.busy ? 'Runway occupied' : 'Runway open';
-  rs.style.color = closed ? 'var(--crit)' : '';
+  rs.style.color = closed ? '#f08a64' : '';
   $('#pausedTag').hidden = !(S.started && !S.over && !S.debrief && S.speed === 0);
   const camp = isCampaign();
   $('#rankstat').hidden = !camp; $('#shiftstat').hidden = !(camp && S.shift);
@@ -48,10 +48,26 @@ function overlayHTML() {
     <button class="mode" data-act="campaign"><b>Campaign</b><span>Work 8-hour shifts with three objectives each. Earn XP, get promoted and unlock new aircraft, base upgrades and training.</span></button>
     <button class="mode" data-act="free"><b>Free play</b><span>No shifts and no ranks. Every aircraft and upgrade is available from the start.</span></button></div></div>`;
 }
+// Urgent strip under the tabs: closed runway and inbound raids, each with a one-click fix
+function alertsHTML() {
+  if (!S.started || S.over || S.debrief) return '';
+  const out = [];
+  if (S.t < S.runway.closedUntil) {
+    const c = rushCost(), blk = rushBlock();
+    out.push(`<div class="al"><b>Runway 27 closed</b><span>Crater repair, open again in ${fmtDur(S.runway.closedUntil - S.t)}. Jets can still taxi and wait at the runway.</span>${c ? `<button class="btn red" data-act="rush" ${blk ? 'disabled' : ''}>Emergency repair · ${money(c)}</button>${blk === 'Not enough budget' ? '<em>Not enough budget</em>' : ''}` : '<em>Engineers finishing up</em>'}</div>`);
+  }
+  for (const r of S.raids) {
+    const m = MS(r.mission), f = m && FL(m.flight), eta = fmtDur((hyp(r.x, r.y) - 14) / r.speed);
+    out.push(`<div class="al"><b>Raid inbound</b><span>${r.n} enemy fighter${r.n > 1 ? 's' : ''} from the ${bearingName(r.x, r.y)}, over the base in ${eta}.${f ? ` ${f.call}: ${FSTATE[f.state].toLowerCase()}.` : ''}</span>${m && !f && m.status === 'open' ? `<button class="btn go" data-act="planint" data-id="${m.id}">Plan intercept</button>` : ''}</div>`);
+  }
+  return out.join('');
+}
 function renderUI(force) {
   if (!S) return;
   tutTick();
   updateTop(); renderTabs();
+  const al = alertsHTML(), alb = $('#alerts');
+  if (al !== UI.lastAlerts) { alb.innerHTML = al; alb.hidden = !al; UI.lastAlerts = al; }
   const cl = clipHTML();
   if (cl !== UI.lastClip) { $('#clip').innerHTML = cl; UI.lastClip = cl; }
   const ch = coachHTML(), co = $('#coach');
@@ -164,6 +180,8 @@ function doAct(d) {
     case 'buy': buyAircraft(d.k); break;
     case 'swap': swapPilot(a); break;
     case 'perk': unlockPerk(d.k); break;
+    case 'rush': rushRunway(); break;
+    case 'planint': UI.tab = 'missions'; UI.selM = d.id; UI.pick.clear(); break;
     case 'perkset': setPerk(d.k, d.v === 'on'); break;
     case 'sound': setSound(!SND.on); break;
     case 'selm': UI.selM = d.id; UI.pick.clear(); break;
@@ -218,7 +236,7 @@ function frame(now) {
 }
 function boot(data) {
   const hot = data && data.S;
-  S = hot || loadGame() || newGame();
+  S = (hot && migrate(hot)) || loadGame() || newGame();
   const owed = syncRankPerks();
   if (owed) log(`Perk points for promotions you earned earlier: +${owed}. Spend them on the Base tab.`, 'good');
   if (!hot && S.started && !S.over) { UI.resume = true; S.started = false; }

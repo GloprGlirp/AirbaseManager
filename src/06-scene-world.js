@@ -150,6 +150,14 @@ function drawAirfield(L, now) {
     cx.fillStyle = 'rgba(18,16,14,.85)';
     for (const f of S.fx) if (f.kind === 'smoke' && f.at === 'rwy') ell(f.x * W, G.rwy * H, W * 0.022, rh * 0.32);
     cx.strokeStyle = 'rgba(245,210,70,.85)'; cx.lineWidth = PX;
+    const u = UL() * gsc(G.rwy), arm = Math.sin(now / 400) * 0.25;
+    for (const f of S.fx) if (f.kind === 'smoke' && f.at === 'rwy') {   // engineers working the crater
+      const ex = f.x * W + W * 0.03, ey = G.rwy * H + rh * 0.12;
+      cx.fillStyle = rgb(shade([214, 168, 40], k)); cx.fillRect(ex, ey - u * 0.16, u * 0.34, u * 0.12); cx.fillRect(ex + u * 0.2, ey - u * 0.27, u * 0.12, u * 0.12);
+      cx.fillStyle = rgb(shade([30, 30, 30], k)); cx.fillRect(ex, ey - u * 0.05, u * 0.34, u * 0.05);
+      cx.strokeStyle = rgb(shade([190, 150, 36], k)); cx.lineWidth = Math.max(PX, u * 0.04); cx.beginPath(); cx.moveTo(ex + u * 0.05, ey - u * 0.14); cx.lineTo(ex - u * 0.18, ey - u * (0.32 + arm * 0.2)); cx.lineTo(ex - u * 0.3, ey - u * (0.08 + arm * 0.15)); cx.stroke();
+      if ((now % 700) < 350) { cx.fillStyle = 'rgba(255,170,40,.95)'; cx.fillRect(ex + u * 0.24, ey - u * 0.31, Math.max(PX, u * 0.04), Math.max(PX, u * 0.04)); }
+    }
     for (const x of [0.22, 0.6]) { cx.beginPath(); cx.moveTo(x * W - rh * 0.5, ry0 + 2); cx.lineTo(x * W + rh * 0.5, ry0 + rh - 2); cx.moveTo(x * W + rh * 0.5, ry0 + 2); cx.lineTo(x * W - rh * 0.5, ry0 + rh - 2); cx.stroke(); }
   }
   drawBaseExtras(L, k, now);

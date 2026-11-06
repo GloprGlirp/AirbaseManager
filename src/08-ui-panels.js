@@ -50,7 +50,7 @@ function supplyHTML() {
   <div class="cols2">
     <div><p class="h">Inbound deliveries</p><div class="list" style="margin-top:8px">${inbound.length ? inbound.map(([t, it]) => `<div><span>${esc(t)}</span><span class="muted">${it.map(([k, q]) => fmtQ(k, q) + ' ' + RES_DEF[k].short).join(', ')}</span></div>`).join('') : '<div><span class="muted">Nothing on order.</span></div>'}</div></div>
     <div><p class="h">Base status</p><dl class="kv" style="margin-top:8px">
-      <dt>Runway 27</dt><dd class="${closed ? 'critc' : 'okc'}">${closed ? `Closed, crater repair ${fmtDur(S.runway.closedUntil - S.t)}` : 'Open'}</dd>
+      <dt>Runway 27</dt><dd class="${closed ? 'critc' : 'okc'}">${closed ? `Closed, crater repair ${fmtDur(S.runway.closedUntil - S.t)}` : 'Open'}${closed && rushCost() ? ` <button class="btn red" data-act="rush" ${rushBlock() ? 'disabled' : ''}>Emergency repair · ${money(rushCost())}</button>` : ''}</dd>
       <dt>Ground crews</dt><dd>${crewsBusy()} of ${S.crews} working</dd>
       <dt>Air defence</dt><dd>${S.base.patriot || S.base.shorad ? `${S.base.patriot} Patriot, ${S.base.shorad} Avenger` : 'None. Build it on the Base tab.'}</dd>
       <dt>Weather</dt><dd>${WX_NAME[S.wx.kind]}, ${S.wx.wind}° / ${S.wx.kt} kt</dd>
@@ -133,7 +133,8 @@ function planHTML(m) {
   const station = m.type === 'CAP' ? m.dur : m.type === 'RECON' ? m.dur : m.type === 'STRIKE' ? 8 : 6;
   const fuelNeed = chosen.length ? Math.max(...chosen.map(a => TYPES[a.type].burn * ALT_BURN[UI.tac.alt] * (d * 2 / spd + station * 1.4))) : 0;
   let warn = '';
-  if (chosen.length) {
+  if (chosen.length && S.t < S.runway.closedUntil) warn = `Runway closed for ${fmtDur(S.runway.closedUntil - S.t)}. Jets will wait at the runway.`;
+  else if (chosen.length) {
     if (m.type === 'STRIKE' && !chosen.some(hasA2G)) warn = 'No bombs or Mavericks loaded. This strike cannot succeed.';
     else if (m.type !== 'STRIKE' && !chosen.some(a => a.load.aim120 > 0 || a.load.aim9 > 0)) warn = 'No air-to-air missiles loaded.';
     else if (chosen.some(a => a.fuel < fuelNeed + 7)) warn = 'Fuel is tight. Expect an early RTB or plan a tanker.';

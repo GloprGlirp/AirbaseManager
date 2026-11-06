@@ -119,3 +119,24 @@ function tickPerks() {
     }
   }
 }
+
+// ---------- Emergency runway repair ----------
+function rushCost() {
+  const left = S.runway.closedUntil - S.t;
+  if (left <= 6) return 0;
+  return Math.max(60, Math.round(left * 3 * (S.base.rrr ? 0.7 : 1) / 10) * 10);
+}
+function rushBlock() {
+  if (S.t >= S.runway.closedUntil) return 'Runway open';
+  const c = rushCost();
+  if (!c) return 'Almost done';
+  if (S.funds < c) return 'Not enough budget';
+  return null;
+}
+function rushRunway() {
+  if (rushBlock()) return;
+  const c = rushCost();
+  S.funds -= c;
+  S.runway.closedUntil = S.t + 5;
+  log(`Emergency runway repair for ${money(c)}. Engineers will have runway 27 open in 5 min.`, 'good');
+}
